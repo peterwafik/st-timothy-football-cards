@@ -1,0 +1,229 @@
+{
+ "Egypt": {
+  "leagues": [
+   "Egyptian Premier League"
+  ],
+  "clubs": [
+   "Al Ahly",
+   "Zamalek",
+   "Pyramids",
+   "Al Masry",
+   "Future FC",
+   "Ceramica Cleopatra",
+   "ENPPI",
+   "Smouha",
+   "Ismaily",
+   "Al Ittihad Alexandria",
+   "El Gouna",
+   "Ghazl El Mahalla",
+   "Haras El Hodoud",
+   "National Bank of Egypt",
+   "Pharco",
+   "Petrojet",
+   "Tala'ea El Gaish",
+   "ZED FC",
+   "Mokawloon",
+   "Wadi Degla",
+   "Kahraba Ismailia",
+   "El Qanah",
+   "Asyut Petroleum",
+   "Abou Qir Fertilizers",
+   "Modern Sport"
+  ]
+ },
+ "Saudi Arabia": {
+  "leagues": [
+   "Saudi-Arabian Pro League"
+  ],
+  "clubs": [
+   "Al Hilal",
+   "Al Nassr",
+   "Al Ittihad",
+   "Al Ahli",
+   "Al Shabab",
+   "Al Ettifaq",
+   "Al Taawoun",
+   "Al Fateh",
+   "Al Fayha",
+   "Al Khaleej",
+   "Al Riyadh",
+   "Al Okhdood",
+   "Al Qadsiah",
+   "Al Kholood",
+   "Al Najma",
+   "Damac",
+   "NEOM",
+   "Al Hazem"
+  ]
+ },
+ "Brazil": {
+  "leagues": [
+   "Brazilian Serie A"
+  ],
+  "clubs": [
+   "Flamengo",
+   "Palmeiras",
+   "Corinthians",
+   "Sao Paulo",
+   "Santos",
+   "Fluminense",
+   "Botafogo",
+   "Vasco da Gama",
+   "Gremio",
+   "Internacional",
+   "Atletico Mineiro",
+   "Cruzeiro",
+   "Bahia",
+   "Fortaleza",
+   "Athletico Paranaense",
+   "Red Bull Bragantino",
+   "Vitoria",
+   "Sport Recife",
+   "Ceara",
+   "Juventude",
+   "Mirassol"
+  ]
+ },
+ "Argentina": {
+  "leagues": [
+   "Argentinian Primera Division"
+  ],
+  "clubs": [
+   "Boca Juniors",
+   "River Plate",
+   "Racing Club",
+   "Independiente",
+   "San Lorenzo",
+   "Estudiantes de La Plata",
+   "Velez Sarsfield",
+   "Talleres",
+   "Rosario Central",
+   "Newell's Old Boys",
+   "Lanus",
+   "Argentinos Juniors",
+   "Huracan",
+   "Godoy Cruz",
+   "Belgrano",
+   "Defensa y Justicia",
+   "Banfield",
+   "Gimnasia La Plata",
+   "Platense",
+   "Tigre"
+  ]
+ },
+ "USA": {
+  "leagues": [
+   "American Major League Soccer"
+  ],
+  "clubs": [
+   "Inter Miami",
+   "LA Galaxy",
+   "Los Angeles FC",
+   "Seattle Sounders",
+   "Atlanta United",
+   "New York City FC",
+   "New York Red Bulls",
+   "Columbus Crew",
+   "FC Cincinnati",
+   "Orlando City",
+   "Philadelphia Union",
+   "Nashville SC",
+   "Austin FC",
+   "Portland Timbers",
+   "Real Salt Lake",
+   "Sporting Kansas City",
+   "Chicago Fire",
+   "Charlotte FC",
+   "St. Louis City",
+   "San Diego FC",
+   "Houston Dynamo",
+   "FC Dallas",
+   "Colorado Rapids",
+   "Minnesota United",
+   "New England Revolution",
+   "DC United",
+   "San Jose Earthquakes",
+   "Toronto FC",
+   "CF Montreal",
+   "Vancouver Whitecaps"
+  ]
+ },
+ "Mexico": {
+  "leagues": [
+   "Mexican Primera League"
+  ],
+  "clubs": [
+   "Club America",
+   "Guadalajara",
+   "Cruz Azul",
+   "Pumas UNAM",
+   "Tigres UANL",
+   "Monterrey",
+   "Toluca",
+   "Santos Laguna",
+   "Leon",
+   "Pachuca",
+   "Atlas",
+   "Puebla",
+   "Necaxa",
+   "Queretaro",
+   "Tijuana",
+   "Mazatlan",
+   "FC Juarez",
+   "Atletico San Luis"
+  ]
+ },
+ "Morocco": {
+  "leagues": [
+   "Moroccan Championship"
+  ],
+  "clubs": [
+   "Wydad Casablanca",
+   "Raja Casablanca",
+   "AS FAR",
+   "RS Berkane",
+   "FUS Rabat",
+   "Maghreb Fes",
+   "Hassania Agadir",
+   "IR Tanger"
+  ]
+ },
+ "Tunisia": {
+  "leagues": [
+   "Tunisian Ligue 1"
+  ],
+  "clubs": [
+   "Esperance de Tunis",
+   "Club Africain",
+   "Etoile du Sahel",
+   "CS Sfaxien",
+   "US Monastir"
+  ]
+ },
+ "Qatar": {
+  "leagues": [
+   "Qatar Stars League"
+  ],
+  "clubs": [
+   "Al Sadd",
+   "Al Duhail",
+   "Al Rayyan",
+   "Al Gharafa",
+   "Al Arabi",
+   "Al Wakrah"
+  ]
+ },
+ "United Arab Emirates": {
+  "leagues": [
+   "UAE Pro League"
+  ],
+  "clubs": [
+   "Al Ain",
+   "Al Wahda",
+   "Al Jazira",
+   "Shabab Al Ahli",
+   "Sharjah",
+   "Al Wasl"
+  ]
+ }
+}
