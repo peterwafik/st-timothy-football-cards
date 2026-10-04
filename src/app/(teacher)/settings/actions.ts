@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth';
 import { isValidISODate } from '@/lib/dates';
 import { createAdminClient } from '@/lib/supabase/admin';
+import { ensureTeacherAccount } from '@/lib/teacher-accounts';
 
 const back = (msg: string) => redirect(`/settings?msg=${encodeURIComponent(msg)}`);
 
@@ -37,11 +38,16 @@ export async function createTeacher(fd: FormData) {
   if (password.length < 8) back('Temporary password must be at least 8 characters.');
 
   const admin = createAdminClient();
-  const { data, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
-  if (error || !data.user) back(`Could not create user: ${error?.message ?? 'unknown error'}`);
-  const { error: tErr } = await admin.from('teachers').insert({ user_id: data.user!.id, name, role });
+  const result = await ensureTeacherAccount(
+    {
+      auth: admin.auth.admin,
+      upsertTeacher: async (row) => admin.from('teachers').upsert(row),
+    },
+    { name, email, password, role },
+  );
   revalidatePath('/settings');
-  back(tErr ? 'User created but could not add as teacher.' : `${name} added. Share the email and temporary password with them.`);
+  if (!result.ok) back(result.error);
+  back(`${name} added. Share the email and temporary password with them.`);
 }
 
 export async function removeTeacher(userId: string) {
