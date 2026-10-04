@@ -18,7 +18,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
         <PitchMarkings />
         <span className="relative block w-28 drop-shadow-2xl"><ClubCrest club="st-timothy" /></span>
         <div className="relative text-center">
-          <h1 className="font-stadium text-6xl font-extrabold leading-none">Leaders login</h1>
+          <h1 className="font-stadium text-6xl font-extrabold leading-none">Servants Login</h1>
           <p className="mt-2 font-card text-lg text-chalk/75">Log sessions and keep the St. Timothy squad’s cards up to date.</p>
         </div>
         <LoginForm initialError={initial} />

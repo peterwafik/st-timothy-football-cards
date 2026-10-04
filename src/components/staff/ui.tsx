@@ -1,4 +1,4 @@
-// Shared look for the leaders' pages: dugout panels on the stadium pitch, dark fields, gold primary actions.
+// Shared look for the servants' pages: dugout panels on the stadium pitch, dark fields, gold primary actions.
 
 export const field =
   'w-full rounded-xl bg-dugout/80 px-4 py-3 font-card text-lg text-chalk ring-1 ring-chalk/20 placeholder:text-chalk/40 ' +

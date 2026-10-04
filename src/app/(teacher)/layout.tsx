@@ -20,7 +20,7 @@ export default async function TeacherLayout({ children }: { children: React.Reac
         <div className="flex items-center gap-3">
           <Link href="/" className="flex flex-1 items-center gap-3">
             <span className="block w-11"><ClubCrest club="st-timothy" /></span>
-            <span className="font-stadium text-lg font-semibold sm:text-xl">St. Timothy Leaders</span>
+            <span className="font-stadium text-lg font-semibold sm:text-xl">St. Timothy Servants</span>
           </Link>
           <span className="hidden font-card text-base text-chalk/70 sm:inline">{teacher.name}</span>
           <form action={signOut}>

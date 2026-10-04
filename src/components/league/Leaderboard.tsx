@@ -21,7 +21,7 @@ export function Leaderboard({
 
   return (
     <StadiumBackground>
-      <SiteHeader link={showLogin ? { href: '/login', label: 'Leaders login' } : undefined} />
+      <SiteHeader link={showLogin ? { href: '/login', label: 'Servants Login' } : undefined} />
 
       <section className="relative min-h-[34rem] pt-8 text-center">
         <PitchMarkings />
