@@ -5,7 +5,7 @@ import { Avatar } from '@/components/Avatar';
 import { ClubCrest } from '@/components/ClubCrest';
 import { Flag } from '@/components/Flag';
 import { field } from '@/components/staff/ui';
-import { templateForTier } from '@/lib/card';
+import { templateUrl } from '@/lib/card';
 
 export interface SquadRow {
   id: string; name: string; photoUrl: string | null; flag: string; club: string;
@@ -40,7 +40,7 @@ export function KidsSquad({ rows }: { rows: SquadRow[] }) {
                   {!r.photoUrl && r.active && <span className="text-trophy">Needs a photo</span>}
                 </span>
               </span>
-              {r.tier && <img src={`/templates/${templateForTier(r.tier)}.png`} alt={`Tier ${r.tier} card`} className="h-11 w-auto" />}
+              {r.tier && <img src={templateUrl(r.tier)} alt={`Tier ${r.tier} card`} className="h-11 w-auto" />}
               <span className="w-16 text-right">
                 <span className="block font-stadium text-2xl font-extrabold leading-none tabular-nums">{r.score}</span>
                 <span className="font-card text-xs text-chalk/60">pts</span>

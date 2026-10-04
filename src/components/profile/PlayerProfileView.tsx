@@ -13,7 +13,7 @@ import { formatLongDate } from '@/lib/dates';
 import { FLAGS } from '@/lib/flags';
 import { POSITIONS } from '@/lib/positions';
 import { ordinal, seasonLabel } from '@/lib/standings';
-import { templateForTier } from '@/lib/card';
+import { templateUrl } from '@/lib/card';
 import type { PlayerProfile } from '@/lib/data';
 
 const PANEL = 'rounded-2xl bg-dugout/90 p-5 shadow-2xl ring-1 ring-chalk/15 backdrop-blur sm:p-7';
@@ -79,7 +79,7 @@ export function PlayerProfileView({ profile }: { profile: PlayerProfile }) {
             />
             <KeyNumber value={String(profile.score)} label={`Points, ${seasonLabel(profile.seasonStart).replace('Season ', '')}`} />
             <KeyNumber value={String(card.tier)} label="Card tier">
-              <img src={`/templates/${templateForTier(card.tier)}.png`} alt="" className="hidden h-12 w-auto sm:block" />
+              <img src={templateUrl(card.tier)} alt="" className="hidden h-12 w-auto sm:block" />
             </KeyNumber>
           </div>
         </div>

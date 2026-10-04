@@ -1,7 +1,7 @@
 import { ClubCrest } from '../ClubCrest';
 import { Flag } from '../Flag';
 import { clubById } from '@/lib/clubs';
-import { templateForTier } from '@/lib/card';
+import { templateUrl } from '@/lib/card';
 import type { LeagueRow } from '@/lib/standings';
 
 type Placed = LeagueRow & { position: number };
@@ -59,7 +59,7 @@ export function LeagueTable({ rows, started, emptyMessage }: { rows: Placed[]; s
                   </span>
                 </td>
                 <td className="py-2">
-                  <img src={`/templates/${templateForTier(row.card.tier)}.png`} alt={`Tier ${row.card.tier} card`} className="h-10 w-auto" />
+                  <img src={templateUrl(row.card.tier)} alt={`Tier ${row.card.tier} card`} className="h-10 w-auto" />
                 </td>
                 <td className="py-2 pr-5 text-right font-stadium text-2xl font-bold tabular-nums">{row.score}</td>
               </tr>
