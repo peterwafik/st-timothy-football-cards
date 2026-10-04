@@ -24,14 +24,15 @@
 - Env vars: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (the project's publishable/anon key), `SUPABASE_SERVICE_ROLE_KEY` (secret/service-role key, server only), `NEXT_PUBLIC_SITE_URL` (used in QR codes).
 - Next.js 16 conventions: request interception lives in `src/proxy.ts` exporting `proxy`; `params`/`searchParams` are Promises; `cookies()` is async.
 - No Higgsfield usage anywhere in this plan.
+- Flags: every flag in `country-flag-icons` (incl. England/Scotland/Wales/N. Ireland), Egypt first. Clubs: real logos, all top-25 European leagues + curated rest-of-world list, chosen country → club; default club `st-timothy`. All assets self-hosted under `public/` (html-to-image needs same-origin images).
 
 ## Review Focus
 
-1. **Season with >1000 entries** — Supabase returns at most 1000 rows per request; a reasonable person expects stats to stay correct all year. Pinned by `fetchAll` pagination test in Task 4.
+1. **Season with >1000 entries** — Supabase returns at most 1000 rows per request; a reasonable person expects stats to stay correct all year. Pinned by `fetchAll` pagination test in Task 5.
 2. **Season start, nobody has points** — all kids tie at 0; a reasonable person expects everyone on bronze, not everyone on crystal. Pinned by tier test in Task 2.
 3. **Brand-new kid / activity never held** — expects 0s, never `NaN`. Pinned in Task 2.
-4. **Two teachers log the same Fasl for the same kid** — expects one entry and an "already logged" message, not double points. Pinned by DB unique constraint (Task 4) and `summarizeInsert` test in Task 7.
-5. **Long names like "Filopateer Ayman"** — expects the name to fit on the card line. Pinned by `nameFontScale` test in Task 3.
+4. **Two teachers log the same Fasl for the same kid** — expects one entry and an "already logged" message, not double points. Pinned by DB unique constraint (Task 5) and `summarizeInsert` test in Task 8.
+5. **Long names like "Filopateer Ayman"** — expects the name to fit on the card line. Pinned by `nameFontScale` test in Task 4.
 
 ---
 
@@ -47,7 +48,9 @@ src/lib/scoring.ts (+ .test.ts)     pure stat/score/tier math
 src/lib/card.ts (+ .test.ts)        tier→template, rank label, name font scale, CardData type
 src/lib/dates.ts (+ .test.ts)       local ISO date + validation
 src/lib/fetch-all.ts (+ .test.ts)   paginated Supabase reads
-src/lib/flags.ts, src/lib/clubs.ts  selectable lists
+src/lib/flags.ts, src/lib/clubs.ts  flag + club catalogs (read generated JSON)
+scripts/copy-flags.mjs, scripts/build-clubs.mjs, scripts/world-clubs.json  one-off asset builders
+public/flags/*.svg, public/clubs/<country>/<club>.png  downloaded assets
 src/lib/supabase/{server,client,admin,proxy}.ts
 src/lib/auth.ts                     requireTeacher / requireAdmin
 src/lib/data.ts                     loadClassSnapshot, getCardByCode, toCardData
@@ -471,14 +474,324 @@ git commit -m "feat: scoring engine for stats, score and tiers"
 
 ---
 
-### Task 3: Card templates and PlayerCard component
+### Task 3: Flag and club-logo catalogs
+
+Every kid gets a real country flag (all 267 flags, incl. England/Scotland/Wales) and a real club logo, chosen from
+dropdowns grouped by country. Assets are downloaded once by scripts, committed under `public/`, and served from our
+own domain (needed so html-to-image can export cards).
+
+Sources:
+- Flags: SVGs shipped inside the `country-flag-icons` npm package.
+- European clubs: every club of the top 25 UEFA leagues from https://github.com/luukhopman/football-logos (transparent PNGs, folder per `Country - League`).
+- Rest of world: TheSportsDB free API (`/api/v1/json/123/searchteams.php?t=<name>`), looked up by name from a curated list. The free tier returns max 10 teams per league listing and ~30 requests/minute, so we search club by club with a 2.1 s delay.
 
 **Files:**
-- Create: `scripts/prepare_templates.py`, `public/templates/*.png`, `src/lib/card.ts`, `src/lib/card.test.ts`, `src/lib/flags.ts`, `src/lib/clubs.ts`, `src/components/Flag.tsx`, `src/components/ClubCrest.tsx`, `src/components/PlayerCard.tsx`, `src/components/DownloadCardButton.tsx`, `src/app/dev/cards/page.tsx`
+- Create: `scripts/copy-flags.mjs`, `scripts/build-clubs.mjs`, `scripts/world-clubs.json`, `public/flags/*.svg`, `public/clubs/**.png`, `src/lib/flags.generated.json`, `src/lib/clubs.generated.json`, `src/lib/flags.ts`, `src/lib/clubs.ts`, `src/lib/catalogs.test.ts`, `src/components/Flag.tsx`, `src/components/ClubCrest.tsx`
+- Modify: `package.json` (dev dependency `tar`)
+
+**Interfaces:**
+- Produces:
+```ts
+// src/lib/flags.ts
+export interface FlagOption { code: string; name: string }  // code: 'EG', 'GB-ENG', …
+export const FLAGS: FlagOption[];                            // Egypt first, then A–Z by name
+export function isFlagCode(code: string): boolean;
+// src/lib/clubs.ts
+export interface Club { id: string; name: string; country: string; league: string; logo: string | null } // id 'egypt/al-ahly'; logo '/clubs/egypt/al-ahly.png'; null only for St. Timothy
+export const ST_TIMOTHY: Club;                               // id 'st-timothy' (DB default)
+export const CLUBS: Club[];                                  // ST_TIMOTHY first, then generated
+export const CLUB_COUNTRIES: string[];                       // Egypt first, then A–Z
+export function clubById(id: string): Club;                  // unknown id → ST_TIMOTHY
+// components
+export function Flag(props: { code: string }): JSX.Element;      // <img src="/flags/<code>.svg">
+export function ClubCrest(props: { club: string }): JSX.Element; // real logo, or drawn St. Timothy shield
+```
+
+- [ ] **Step 1: Write the failing catalog tests**
+
+`src/lib/catalogs.test.ts`:
+```ts
+import fs from 'node:fs';
+import path from 'node:path';
+import { expect, test } from 'vitest';
+import { CLUB_COUNTRIES, CLUBS, clubById } from './clubs';
+import { FLAGS, isFlagCode } from './flags';
+
+test('flags: Egypt first, home nations present, every file exists', () => {
+  expect(FLAGS[0]).toEqual({ code: 'EG', name: 'Egypt' });
+  expect(FLAGS.find((f) => f.code === 'GB-ENG')?.name).toBe('England');
+  expect(FLAGS.find((f) => f.code === 'GB-SCT')?.name).toBe('Scotland');
+  expect(FLAGS.length).toBeGreaterThan(240);
+  expect(isFlagCode('EG')).toBe(true);
+  expect(isFlagCode('XX')).toBe(false);
+  for (const f of FLAGS) expect(fs.existsSync(path.join('public', 'flags', `${f.code}.svg`)), f.code).toBe(true);
+});
+
+test('clubs: St. Timothy is default, ids unique, every logo file exists', () => {
+  expect(CLUBS[0].id).toBe('st-timothy');
+  expect(clubById('does-not-exist').id).toBe('st-timothy');
+  expect(new Set(CLUBS.map((c) => c.id)).size).toBe(CLUBS.length);
+  for (const c of CLUBS) {
+    if (c.logo) expect(fs.existsSync(path.join('public', c.logo)), c.id).toBe(true);
+  }
+});
+
+test('clubs cover Europe and the rest of the world', () => {
+  expect(CLUBS.length).toBeGreaterThan(500);
+  const egypt = CLUBS.filter((c) => c.country === 'Egypt').map((c) => c.name);
+  expect(egypt).toEqual(expect.arrayContaining(['Al Ahly', 'Zamalek']));
+  expect(CLUB_COUNTRIES[0]).toBe('Egypt');
+  expect(CLUB_COUNTRIES).toEqual(expect.arrayContaining(['England', 'Spain', 'Italy', 'Saudi Arabia', 'Brazil', 'Argentina', 'USA']));
+});
+```
+Run: `npm test` → Expected: FAIL, cannot resolve `./clubs` / `./flags`.
+
+- [ ] **Step 2: Flag copy script**
+
+`scripts/copy-flags.mjs`:
+```js
+// Copies all flag SVGs into public/flags and writes src/lib/flags.generated.json.
+// Usage: node scripts/copy-flags.mjs
+import fs from 'node:fs';
+import path from 'node:path';
+
+const SRC = 'node_modules/country-flag-icons/3x2';
+const OUT = 'public/flags';
+const SPECIAL = { 'GB-ENG': 'England', 'GB-SCT': 'Scotland', 'GB-WLS': 'Wales', 'GB-NIR': 'Northern Ireland' };
+const regionNames = new Intl.DisplayNames(['en'], { type: 'region' });
+
+fs.mkdirSync(OUT, { recursive: true });
+const flags = [];
+for (const file of fs.readdirSync(SRC).filter((f) => f.endsWith('.svg'))) {
+  const code = file.slice(0, -4);
+  let name = SPECIAL[code];
+  if (!name && /^[A-Z]{2}$/.test(code)) {
+    try {
+      const n = regionNames.of(code);
+      if (n && n !== code) name = n;
+    } catch { /* unknown region code */ }
+  }
+  if (!name) continue;
+  fs.copyFileSync(path.join(SRC, file), path.join(OUT, file));
+  flags.push({ code, name });
+}
+flags.sort((a, b) => a.name.localeCompare(b.name));
+fs.writeFileSync('src/lib/flags.generated.json', JSON.stringify(flags, null, 1) + '\n');
+console.log(`Copied ${flags.length} flags`);
+```
+Run: `node scripts/copy-flags.mjs` → Expected: `Copied 2xx flags` (≈ 255–265).
+
+Names are generated here (not at runtime) so server and browser render identical option text — no hydration mismatches.
+
+- [ ] **Step 3: Curated rest-of-world club list**
+
+`scripts/world-clubs.json` (European leagues come from the logo repo; this file covers everything else). Country labels must match what the app shows:
+```json
+{
+  "Egypt": ["Al Ahly", "Zamalek", "Pyramids", "Al Masry", "Future FC", "Ceramica Cleopatra", "ENPPI", "Smouha", "Ismaily", "Al Ittihad Alexandria", "El Gouna", "Ghazl El Mahalla", "Haras El Hodoud", "National Bank of Egypt", "Pharco", "Petrojet", "Talaea El Gaish", "ZED FC", "Al-Mokawloon al-Arab", "Wadi Degla", "Kahraba Ismailia", "El Qanah", "Asyut Petroleum", "Abou Qir Fertilizers", "Modern Sport"],
+  "Saudi Arabia": ["Al Hilal", "Al Nassr", "Al Ittihad", "Al Ahli", "Al Shabab", "Al Ettifaq", "Al Taawoun", "Al Fateh", "Al Fayha", "Al Khaleej", "Al Riyadh", "Al Okhdood", "Al Qadsiah", "Al Kholood", "Al Najma", "Damac", "NEOM", "Al Hazem"],
+  "Brazil": ["Flamengo", "Palmeiras", "Corinthians", "Sao Paulo", "Santos", "Fluminense", "Botafogo", "Vasco da Gama", "Gremio", "Internacional", "Atletico Mineiro", "Cruzeiro", "Bahia", "Fortaleza", "Athletico Paranaense", "Red Bull Bragantino", "Vitoria", "Sport Recife", "Ceara", "Juventude", "Mirassol"],
+  "Argentina": ["Boca Juniors", "River Plate", "Racing Club", "Independiente", "San Lorenzo", "Estudiantes", "Velez Sarsfield", "Talleres", "Rosario Central", "Newell's Old Boys", "Lanus", "Argentinos Juniors", "Huracan", "Godoy Cruz", "Belgrano", "Defensa y Justicia", "Banfield", "Gimnasia La Plata", "Platense", "Tigre"],
+  "USA": ["Inter Miami", "LA Galaxy", "Los Angeles FC", "Seattle Sounders", "Atlanta United", "New York City FC", "New York Red Bulls", "Columbus Crew", "FC Cincinnati", "Orlando City", "Philadelphia Union", "Nashville SC", "Austin FC", "Portland Timbers", "Real Salt Lake", "Sporting Kansas City", "Chicago Fire", "Charlotte FC", "St. Louis City", "San Diego FC", "Houston Dynamo", "FC Dallas", "Colorado Rapids", "Minnesota United", "New England Revolution", "DC United", "San Jose Earthquakes", "Toronto FC", "CF Montreal", "Vancouver Whitecaps"],
+  "Mexico": ["Club America", "Guadalajara", "Cruz Azul", "Pumas UNAM", "Tigres UANL", "Monterrey", "Toluca", "Santos Laguna", "Leon", "Pachuca", "Atlas", "Puebla", "Necaxa", "Queretaro", "Tijuana", "Mazatlan", "FC Juarez", "Atletico San Luis"],
+  "Morocco": ["Wydad Casablanca", "Raja Casablanca", "AS FAR", "RS Berkane", "FUS Rabat", "Maghreb Fes", "Hassania Agadir", "Ittihad Tanger"],
+  "Tunisia": ["Esperance de Tunis", "Club Africain", "Etoile du Sahel", "CS Sfaxien", "US Monastir"],
+  "Qatar": ["Al Sadd", "Al Duhail", "Al Rayyan", "Al Gharafa", "Al Arabi", "Al Wakrah"],
+  "United Arab Emirates": ["Al Ain", "Al Wahda", "Al Jazira", "Shabab Al Ahli", "Sharjah", "Al Wasl"]
+}
+```
+
+- [ ] **Step 4: Club build script**
+
+```bash
+npm install -D tar
+```
+`scripts/build-clubs.mjs`:
+```js
+// Downloads club logos into public/clubs/<country>/<club>.png and writes src/lib/clubs.generated.json.
+// Usage: node scripts/build-clubs.mjs     (one-off, ~8 minutes because of API rate limits; re-run to refresh)
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import * as tar from 'tar';
+
+const OUT_DIR = 'public/clubs';
+const CATALOG = 'src/lib/clubs.generated.json';
+const EUROPE_TARBALL = 'https://codeload.github.com/luukhopman/football-logos/tar.gz/refs/heads/master';
+const SPORTSDB = 'https://www.thesportsdb.com/api/v1/json/123/searchteams.php?t=';
+const COUNTRY_ALIASES = { 'United States': 'USA', 'Türkiye': 'Turkey' };
+
+const slug = (s) =>
+  s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const country = (c) => COUNTRY_ALIASES[c] ?? c;
+
+const catalog = [];
+const seen = new Set();
+function add({ name, country: c, league }, png) {
+  const id = `${slug(c)}/${slug(name)}`;
+  if (seen.has(id)) return false;
+  seen.add(id);
+  fs.mkdirSync(path.join(OUT_DIR, slug(c)), { recursive: true });
+  fs.writeFileSync(path.join(OUT_DIR, `${id}.png`), png);
+  catalog.push({ id, name, country: c, league, logo: `/clubs/${id}.png` });
+  return true;
+}
+
+async function europe() {
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'logos-'));
+  const tgz = path.join(tmp, 'logos.tgz');
+  const res = await fetch(EUROPE_TARBALL);
+  if (!res.ok) throw new Error(`Europe download failed: ${res.status}`);
+  fs.writeFileSync(tgz, Buffer.from(await res.arrayBuffer()));
+  await tar.x({ file: tgz, cwd: tmp });
+  const root = path.join(tmp, 'football-logos-master', 'logos');
+  let n = 0;
+  for (const dir of fs.readdirSync(root)) {
+    const [c, league] = dir.split(' - ');
+    for (const file of fs.readdirSync(path.join(root, dir)).filter((f) => f.endsWith('.png'))) {
+      if (add({ name: file.slice(0, -4), country: country(c), league }, fs.readFileSync(path.join(root, dir, file)))) n++;
+    }
+  }
+  fs.rmSync(tmp, { recursive: true, force: true });
+  console.log(`Europe: ${n} clubs`);
+}
+
+async function searchTeam(name) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const res = await fetch(SPORTSDB + encodeURIComponent(name));
+    if (res.status === 429) { await sleep(60_000); continue; }
+    if (!res.ok) return null;
+    return (await res.json()).teams ?? [];
+  }
+  return null;
+}
+
+async function world() {
+  const list = JSON.parse(fs.readFileSync('scripts/world-clubs.json', 'utf8'));
+  const missed = [];
+  for (const [wantedCountry, names] of Object.entries(list)) {
+    for (const name of names) {
+      await sleep(2100);
+      const teams = (await searchTeam(name))?.filter((t) => t.strSport === 'Soccer' && t.strBadge) ?? [];
+      const team = teams.find((t) => country(t.strCountry) === wantedCountry) ?? teams[0];
+      if (!team) { missed.push(`${wantedCountry}: ${name}`); continue; }
+      const img = await fetch(`${team.strBadge}/small`);
+      if (!img.ok) { missed.push(`${wantedCountry}: ${name} (logo ${img.status})`); continue; }
+      add(
+        { name: team.strTeam, country: country(team.strCountry || wantedCountry), league: team.strLeague || '' },
+        Buffer.from(await img.arrayBuffer()),
+      );
+      process.stdout.write('.');
+    }
+  }
+  console.log(`\nWorld: done. Missed ${missed.length}:`);
+  for (const m of missed) console.log('  -', m);
+}
+
+await europe();
+await world();
+catalog.sort((a, b) => a.country.localeCompare(b.country) || a.league.localeCompare(b.league) || a.name.localeCompare(b.name));
+fs.writeFileSync(CATALOG, JSON.stringify(catalog, null, 1) + '\n');
+console.log(`Wrote ${catalog.length} clubs to ${CATALOG}`);
+```
+
+- [ ] **Step 5: Run it**
+
+Run: `node scripts/build-clubs.mjs` (use `run_in_background`; takes ~8 min).
+Expected: `Europe: 4xx clubs`, a line of dots, a short "Missed" list, `Wrote 5xx+ clubs`.
+For each missed club, look up its exact TheSportsDB name (`curl -s "https://www.thesportsdb.com/api/v1/json/123/searchteams.php?t=<part of name>"`), fix the spelling in `scripts/world-clubs.json`, and re-run. Al Ahly and Zamalek must not be missed.
+Check size: `du -sh public/clubs` → expected under ~30 MB.
+
+- [ ] **Step 6: Catalog modules**
+
+`src/lib/flags.ts`:
+```ts
+import generated from './flags.generated.json';
+
+export interface FlagOption { code: string; name: string }
+
+const all = generated as FlagOption[];
+export const FLAGS: FlagOption[] = [all.find((f) => f.code === 'EG')!, ...all.filter((f) => f.code !== 'EG')];
+
+const CODES = new Set(all.map((f) => f.code));
+export function isFlagCode(code: string): boolean {
+  return CODES.has(code);
+}
+```
+`src/lib/clubs.ts`:
+```ts
+import generated from './clubs.generated.json';
+
+export interface Club { id: string; name: string; country: string; league: string; logo: string | null }
+
+export const ST_TIMOTHY: Club = { id: 'st-timothy', name: 'St. Timothy', country: 'Egypt', league: 'Sunday School', logo: null };
+export const CLUBS: Club[] = [ST_TIMOTHY, ...(generated as Club[])];
+
+const BY_ID = new Map(CLUBS.map((c) => [c.id, c]));
+export function clubById(id: string): Club {
+  return BY_ID.get(id) ?? ST_TIMOTHY;
+}
+
+export const CLUB_COUNTRIES: string[] = [
+  'Egypt',
+  ...[...new Set(CLUBS.map((c) => c.country))].filter((c) => c !== 'Egypt').sort((a, b) => a.localeCompare(b)),
+];
+```
+
+- [ ] **Step 7: Flag and ClubCrest components**
+
+`src/components/Flag.tsx`:
+```tsx
+import { isFlagCode } from '@/lib/flags';
+
+export function Flag({ code }: { code: string }) {
+  const c = isFlagCode(code) ? code : 'EG';
+  return <img src={`/flags/${c}.svg`} alt={c} className="block h-auto w-full shadow" />;
+}
+```
+`src/components/ClubCrest.tsx`:
+```tsx
+import { clubById } from '@/lib/clubs';
+
+const SHIELD = 'M20 1 L38 6 V22 C38 34 30 41 20 45 C10 41 2 34 2 22 V6 Z';
+
+export function ClubCrest({ club }: { club: string }) {
+  const c = clubById(club);
+  if (c.logo) {
+    return <img src={c.logo} alt={c.name} className="block aspect-square h-auto w-full object-contain drop-shadow" />;
+  }
+  // St. Timothy has no official crest: draw a gold/navy shield.
+  return (
+    <svg viewBox="0 0 40 46" className="block h-auto w-full drop-shadow" aria-label={c.name}>
+      <path d={SHIELD} fill="#14213d" stroke="#d4af37" strokeWidth="2" />
+      <path d="M20 9 V37 M11 18 H29" stroke="#d4af37" strokeWidth="3" strokeLinecap="round" />
+    </svg>
+  );
+}
+```
+
+- [ ] **Step 8: Run tests**
+
+Run: `npm test` → Expected: catalog tests PASS (plus scoring tests).
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add scripts/copy-flags.mjs scripts/build-clubs.mjs scripts/world-clubs.json public/flags public/clubs src/lib/flags.generated.json src/lib/clubs.generated.json src/lib/flags.ts src/lib/clubs.ts src/lib/catalogs.test.ts src/components/Flag.tsx src/components/ClubCrest.tsx package.json package-lock.json
+git commit -m "feat: flag and real club-logo catalogs"
+```
+
+---
+
+### Task 4: Card templates and PlayerCard component
+
+**Files:**
+- Create: `scripts/prepare_templates.py`, `public/templates/*.png`, `src/lib/card.ts`, `src/lib/card.test.ts`, `src/components/PlayerCard.tsx`, `src/components/DownloadCardButton.tsx`, `src/app/dev/cards/page.tsx`
 - Modify: `src/app/layout.tsx`, `src/app/globals.css`
 
 **Interfaces:**
-- Consumes: `StatKey`, `STAT_KEYS` from `@/lib/scoring`.
+- Consumes: `StatKey`, `STAT_KEYS` from `@/lib/scoring`; `Flag`, `ClubCrest`, `CLUBS` from Task 3.
 - Produces:
 ```ts
 // src/lib/card.ts
@@ -490,9 +803,6 @@ export function nameFontScale(name: string): number;     // fraction of card wid
 // components
 export function PlayerCard(props: { data: CardData; width?: number; hideStats?: boolean }): JSX.Element;
 export function DownloadCardButton(props: { targetId: string; fileName: string }): JSX.Element;
-// lists
-export const FLAGS: { code: string; name: string }[];
-export const CLUBS: { slug: string; name: string; short: string; colors: [string, string] }[];
 ```
 
 - [ ] **Step 1: Write the template prep script**
@@ -638,96 +948,7 @@ Check: `13 × 0.085 × 0.5 = 0.55 ≤ 0.9`, long names scale proportionally, so 
 
 Run: `npm test` → Expected: PASS.
 
-- [ ] **Step 5: Flags and clubs lists**
-
-`src/lib/flags.ts`:
-```ts
-export const FLAGS = [
-  { code: 'EG', name: 'Egypt' }, { code: 'AR', name: 'Argentina' }, { code: 'BR', name: 'Brazil' },
-  { code: 'PT', name: 'Portugal' }, { code: 'ES', name: 'Spain' }, { code: 'FR', name: 'France' },
-  { code: 'DE', name: 'Germany' }, { code: 'IT', name: 'Italy' }, { code: 'NL', name: 'Netherlands' },
-  { code: 'BE', name: 'Belgium' }, { code: 'HR', name: 'Croatia' }, { code: 'MA', name: 'Morocco' },
-  { code: 'SN', name: 'Senegal' }, { code: 'NG', name: 'Nigeria' }, { code: 'UY', name: 'Uruguay' },
-  { code: 'CO', name: 'Colombia' }, { code: 'US', name: 'USA' }, { code: 'JP', name: 'Japan' },
-  { code: 'SA', name: 'Saudi Arabia' },
-] as const;
-export type FlagCode = (typeof FLAGS)[number]['code'];
-```
-
-`src/lib/clubs.ts`:
-```ts
-export interface Club { slug: string; name: string; short: string; colors: [string, string] }
-
-// Crests are drawn as a simple shield in club colours (no official logos).
-export const CLUBS: Club[] = [
-  { slug: 'st-timothy', name: 'St. Timothy', short: 'STM', colors: ['#c9a227', '#14213d'] },
-  { slug: 'al-ahly', name: 'Al Ahly', short: 'AHL', colors: ['#c8102e', '#ffffff'] },
-  { slug: 'zamalek', name: 'Zamalek', short: 'ZSC', colors: ['#ffffff', '#c8102e'] },
-  { slug: 'pyramids', name: 'Pyramids', short: 'PYR', colors: ['#0b2545', '#5fa8d3'] },
-  { slug: 'barcelona', name: 'Barcelona', short: 'FCB', colors: ['#004d98', '#a50044'] },
-  { slug: 'real-madrid', name: 'Real Madrid', short: 'RMA', colors: ['#ffffff', '#febe10'] },
-  { slug: 'liverpool', name: 'Liverpool', short: 'LIV', colors: ['#c8102e', '#00b2a9'] },
-  { slug: 'man-city', name: 'Man City', short: 'MCI', colors: ['#6cabdd', '#1c2c5b'] },
-  { slug: 'man-united', name: 'Man United', short: 'MUN', colors: ['#da291c', '#000000'] },
-  { slug: 'chelsea', name: 'Chelsea', short: 'CHE', colors: ['#034694', '#ffffff'] },
-  { slug: 'arsenal', name: 'Arsenal', short: 'ARS', colors: ['#ef0107', '#ffffff'] },
-  { slug: 'bayern', name: 'Bayern', short: 'BAY', colors: ['#dc052d', '#0066b2'] },
-  { slug: 'psg', name: 'PSG', short: 'PSG', colors: ['#004170', '#da291c'] },
-  { slug: 'juventus', name: 'Juventus', short: 'JUV', colors: ['#000000', '#ffffff'] },
-  { slug: 'inter-miami', name: 'Inter Miami', short: 'MIA', colors: ['#f7b5cd', '#231f20'] },
-  { slug: 'al-nassr', name: 'Al Nassr', short: 'NSR', colors: ['#fcd116', '#003da5'] },
-];
-
-export function clubBySlug(slug: string): Club {
-  return CLUBS.find((c) => c.slug === slug) ?? CLUBS[0];
-}
-```
-
-- [ ] **Step 6: Flag and ClubCrest components**
-
-`src/components/Flag.tsx`:
-```tsx
-import { AR, BE, BR, CO, DE, EG, ES, FR, HR, IT, JP, MA, NG, NL, PT, SA, SN, US, UY } from 'country-flag-icons/react/3x2';
-import type { ComponentType, SVGProps } from 'react';
-
-const COMPONENTS: Record<string, ComponentType<SVGProps<SVGSVGElement> & { title?: string }>> = {
-  AR, BE, BR, CO, DE, EG, ES, FR, HR, IT, JP, MA, NG, NL, PT, SA, SN, US, UY,
-};
-
-export function Flag({ code }: { code: string }) {
-  const Svg = COMPONENTS[code] ?? EG;
-  return <Svg title={code} className="block h-auto w-full shadow" />;
-}
-```
-
-`src/components/ClubCrest.tsx`:
-```tsx
-import { clubBySlug } from '@/lib/clubs';
-
-export function ClubCrest({ club }: { club: string }) {
-  const c = clubBySlug(club);
-  const id = `crest-${c.slug}`;
-  return (
-    <svg viewBox="0 0 40 46" className="block h-auto w-full drop-shadow" aria-label={c.name}>
-      <defs>
-        <clipPath id={id}>
-          <path d="M20 1 L38 6 V22 C38 34 30 41 20 45 C10 41 2 34 2 22 V6 Z" />
-        </clipPath>
-      </defs>
-      <g clipPath={`url(#${id})`}>
-        <rect width="40" height="46" fill={c.colors[0]} />
-        <rect x="14" width="12" height="46" fill={c.colors[1]} />
-      </g>
-      <path d="M20 1 L38 6 V22 C38 34 30 41 20 45 C10 41 2 34 2 22 V6 Z" fill="none" stroke="#d4af37" strokeWidth="2" />
-      <text x="20" y="27" textAnchor="middle" fontSize="11" fontWeight="700" fill="#fff" stroke="#000" strokeWidth="0.6" paintOrder="stroke">
-        {c.short}
-      </text>
-    </svg>
-  );
-}
-```
-
-- [ ] **Step 7: Font and theme**
+- [ ] **Step 5: Font and theme**
 
 `src/app/layout.tsx` (replace generated file):
 ```tsx
@@ -763,7 +984,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 }
 ```
 
-- [ ] **Step 8: PlayerCard**
+- [ ] **Step 6: PlayerCard**
 
 Overlay positions are percentages of the 182×257 template, measured from the source images: horizontal divider at 63.4%, short flag dashes at 30% and 39.5%, vertical divider centred.
 
@@ -886,12 +1107,13 @@ export function DownloadCardButton({ targetId, fileName }: { targetId: string; f
 }
 ```
 
-- [ ] **Step 9: Dev gallery page to check all 11 tiers visually**
+- [ ] **Step 7: Dev gallery page to check all 11 tiers visually**
 
 `src/app/dev/cards/page.tsx`:
 ```tsx
 import { notFound } from 'next/navigation';
 import { PlayerCard } from '@/components/PlayerCard';
+import { CLUBS } from '@/lib/clubs';
 
 export default function DevCards() {
   if (process.env.NODE_ENV === 'production') notFound();
@@ -904,7 +1126,7 @@ export default function DevCards() {
           width={240}
           data={{
             name: names[tier % names.length], photoUrl: null, flag: tier % 2 ? 'EG' : 'AR',
-            club: tier % 2 ? 'st-timothy' : 'barcelona', tier, active: tier !== 11,
+            club: tier % 2 ? 'st-timothy' : CLUBS[tier]?.id ?? 'st-timothy', tier, active: tier !== 11,
             stats: { SSK: 0, RIB: 45, PRA: 66, CHA: 80, SSA: 99, BEH: 74 },
           }}
         />
@@ -914,28 +1136,28 @@ export default function DevCards() {
 }
 ```
 
-- [ ] **Step 10: Visual check**
+- [ ] **Step 8: Visual check**
 
 Run `npm run dev`, open `http://localhost:3000/dev/cards` (Playwright MCP screenshot or browser). Expected: 11 cards, transparent corners on the dark background, rank number + flag + crest in the top-left between the template's dash lines, name sitting just above the horizontal line, stat rows either side of the vertical line, dark text on tiers 9–11, "Retired" ribbon on tier 11. Adjust the percentages in `PlayerCard.tsx` if anything overlaps the template lines, then re-check. Also compare against `Players badges/1.Daniel Mina.png`.
 
 Run: `npm test && npm run build` → Expected: PASS, build OK.
 
-- [ ] **Step 11: Commit**
+- [ ] **Step 9: Commit**
 
 ```bash
-git add scripts/prepare_templates.py public/templates src/lib/card.ts src/lib/card.test.ts src/lib/flags.ts src/lib/clubs.ts src/components src/app/layout.tsx src/app/globals.css src/app/dev
+git add scripts/prepare_templates.py public/templates src/lib/card.ts src/lib/card.test.ts src/components/PlayerCard.tsx src/components/DownloadCardButton.tsx src/app/layout.tsx src/app/globals.css src/app/dev
 git commit -m "feat: player card component with tier templates"
 ```
 
 ---
 
-### Task 4: Supabase schema, clients, and data loading
+### Task 5: Supabase schema, clients, and data loading
 
 **Files:**
 - Create: `supabase/migrations/0001_init.sql`, `supabase/migrations/0002_seed_kids.sql`, `.env.example`, `src/lib/supabase/server.ts`, `src/lib/supabase/client.ts`, `src/lib/supabase/admin.ts`, `src/lib/supabase/proxy.ts`, `src/proxy.ts`, `src/lib/fetch-all.ts`, `src/lib/fetch-all.test.ts`, `src/lib/data.ts`, `scripts/create-admin.mjs`
 
 **Interfaces:**
-- Consumes: `computeClass`, `Activity`, `KidResult` (Task 2); `CardData` (Task 3).
+- Consumes: `computeClass`, `Activity`, `KidResult` (Task 2); `CardData` (Task 4).
 - Produces:
 ```ts
 // src/lib/supabase/server.ts
@@ -1332,14 +1554,14 @@ git commit -m "feat: Supabase schema, RLS, clients and class snapshot loader"
 
 ---
 
-### Task 5: Public card and leaderboard pages
+### Task 6: Public card and leaderboard pages
 
 **Files:**
 - Create: `src/app/card/[code]/page.tsx`, `src/app/card/[code]/not-found.tsx`, `src/app/leaderboard/page.tsx`
 - Modify: `src/app/page.tsx`
 
 **Interfaces:**
-- Consumes: `getCardByCode`, `loadClassSnapshot`, `toCardData` (Task 4); `PlayerCard`, `DownloadCardButton` (Task 3).
+- Consumes: `getCardByCode`, `loadClassSnapshot`, `toCardData` (Task 5); `PlayerCard`, `DownloadCardButton` (Task 4).
 
 - [ ] **Step 1: Card page**
 
@@ -1445,13 +1667,13 @@ git commit -m "feat: public card and leaderboard pages"
 
 ---
 
-### Task 6: Teacher login and protected layout
+### Task 7: Teacher login and protected layout
 
 **Files:**
 - Create: `src/lib/auth.ts`, `src/app/login/page.tsx`, `src/app/login/LoginForm.tsx`, `src/app/login/actions.ts`, `src/app/(teacher)/layout.tsx`, `src/app/(teacher)/actions.ts`, `src/components/ConfirmButton.tsx`
 
 **Interfaces:**
-- Consumes: `createClient` (server) from Task 4.
+- Consumes: `createClient` (server) from Task 5.
 - Produces:
 ```ts
 // src/lib/auth.ts
@@ -1630,14 +1852,14 @@ git commit -m "feat: teacher login and protected layout"
 
 ---
 
-### Task 7: Log Session page
+### Task 8: Log Session page
 
 **Files:**
 - Create: `src/lib/dates.ts`, `src/lib/dates.test.ts`, `src/lib/log-result.ts`, `src/lib/log-result.test.ts`, `src/app/(teacher)/log/actions.ts`, `src/app/(teacher)/log/LogForm.tsx`
 - Modify: `src/app/(teacher)/log/page.tsx`
 
 **Interfaces:**
-- Consumes: `requireTeacher` (Task 6).
+- Consumes: `requireTeacher` (Task 7).
 - Produces:
 ```ts
 // src/lib/dates.ts
@@ -1881,7 +2103,7 @@ export default async function LogPage() {
 
 - [ ] **Step 5: Verify**
 
-Run: `npm test` → PASS. In the browser: log Fasl for 2 kids today → "Saved 2 kids."; they show "✓ logged". Open one kid's `/card/<code>` → SSA 99, tier no longer bronze. Then delete those two entries in the Supabase dashboard (Table editor → entries) to keep data clean — History's undo arrives in Task 8.
+Run: `npm test` → PASS. In the browser: log Fasl for 2 kids today → "Saved 2 kids."; they show "✓ logged". Open one kid's `/card/<code>` → SSA 99, tier no longer bronze. Then delete those two entries in the Supabase dashboard (Table editor → entries) to keep data clean — History's undo arrives in Task 9.
 
 - [ ] **Step 6: Commit**
 
@@ -1892,13 +2114,13 @@ git commit -m "feat: log session page"
 
 ---
 
-### Task 8: Bonus/Deduct and History with undo
+### Task 9: Bonus/Deduct and History with undo
 
 **Files:**
 - Create: `src/app/(teacher)/adjust/page.tsx`, `src/app/(teacher)/adjust/AdjustForm.tsx`, `src/app/(teacher)/adjust/actions.ts`, `src/app/(teacher)/history/page.tsx`, `src/app/(teacher)/history/actions.ts`
 
 **Interfaces:**
-- Consumes: `requireTeacher`, `ConfirmButton` (Task 6); `toLocalISODate`, `isValidISODate`, `isFutureDate` (Task 7).
+- Consumes: `requireTeacher`, `ConfirmButton` (Task 7); `toLocalISODate`, `isValidISODate`, `isFutureDate` (Task 8).
 - Produces:
 ```ts
 export async function addAdjustment(prev: AdjustState, formData: FormData): Promise<AdjustState>; // AdjustState = { ok: boolean; message: string } | null
@@ -2102,13 +2324,13 @@ git commit -m "feat: bonus/deduct and history with undo"
 
 ---
 
-### Task 9: Kids management, photos and QR codes
+### Task 10: Kids management, photos and QR codes
 
 **Files:**
-- Create: `src/lib/kid-form.ts`, `src/lib/kid-form.test.ts`, `src/app/(teacher)/kids/page.tsx`, `src/app/(teacher)/kids/actions.ts`, `src/app/(teacher)/kids/KidForm.tsx`, `src/app/(teacher)/kids/PhotoUploader.tsx`, `src/app/(teacher)/kids/new/page.tsx`, `src/app/(teacher)/kids/[id]/page.tsx`, `src/app/(teacher)/kids/qr/page.tsx`, `src/lib/qr.ts`
+- Create: `src/lib/kid-form.ts`, `src/lib/kid-form.test.ts`, `src/app/(teacher)/kids/page.tsx`, `src/app/(teacher)/kids/actions.ts`, `src/app/(teacher)/kids/KidForm.tsx`, `src/app/(teacher)/kids/Pickers.tsx`, `src/app/(teacher)/kids/PhotoUploader.tsx`, `src/app/(teacher)/kids/new/page.tsx`, `src/app/(teacher)/kids/[id]/page.tsx`, `src/app/(teacher)/kids/qr/page.tsx`, `src/lib/qr.ts`
 
 **Interfaces:**
-- Consumes: `requireTeacher` (Task 6); `loadClassSnapshot`, `toCardData`, `KidRow` (Task 4); `PlayerCard` (Task 3); `FLAGS`, `CLUBS` (Task 3); `createClient` browser (Task 4).
+- Consumes: `requireTeacher` (Task 7); `loadClassSnapshot`, `toCardData`, `KidRow` (Task 5); `PlayerCard` (Task 4); `FLAGS`, `isFlagCode`, `CLUBS`, `CLUB_COUNTRIES`, `clubById`, `Flag`, `ClubCrest` (Task 3); `createClient` browser (Task 5).
 - Produces:
 ```ts
 // src/lib/kid-form.ts
@@ -2126,6 +2348,7 @@ export async function saveKid(id: string | null, prev: string | null, fd: FormDa
 `src/lib/kid-form.test.ts`:
 ```ts
 import { expect, test } from 'vitest';
+import { CLUBS } from './clubs';
 import { parseKidForm } from './kid-form';
 
 function fd(values: Record<string, string>) {
@@ -2133,12 +2356,12 @@ function fd(values: Record<string, string>) {
   for (const [k, v] of Object.entries(values)) f.set(k, v);
   return f;
 }
-const base = { name: ' Mina Hesham ', flag: 'EG', club: 'al-ahly', ssk: '', joined_on: '2026-10-01', active: 'on', photo_url: '' };
+const base = { name: ' Mina Hesham ', flag: 'EG', club: 'st-timothy', ssk: '', joined_on: '2026-10-01', active: 'on', photo_url: '' };
 
 test('parses a valid kid with blank SSK as null', () => {
   expect(parseKidForm(fd(base))).toEqual({
     ok: true,
-    value: { name: 'Mina Hesham', photo_url: null, flag: 'EG', club: 'al-ahly', ssk: null, joined_on: '2026-10-01', active: true },
+    value: { name: 'Mina Hesham', photo_url: null, flag: 'EG', club: 'st-timothy', ssk: null, joined_on: '2026-10-01', active: true },
   });
 });
 test('rejects empty name', () => {
@@ -2146,6 +2369,12 @@ test('rejects empty name', () => {
 });
 test('rejects SSK out of range', () => {
   expect(parseKidForm(fd({ ...base, ssk: '120' }))).toEqual({ ok: false, error: 'SSK must be 0–99.' });
+});
+test('keeps a real club id and a home-nation flag', () => {
+  const realClub = CLUBS[1].id;
+  const r = parseKidForm(fd({ ...base, club: realClub, flag: 'GB-ENG' }));
+  expect(r.ok && r.value.club).toBe(realClub);
+  expect(r.ok && r.value.flag).toBe('GB-ENG');
 });
 test('unknown flag/club fall back to defaults; unchecked active is false', () => {
   const { active: _drop, ...rest } = base;
@@ -2161,9 +2390,9 @@ Run: `npm test` → Expected: FAIL.
 
 `src/lib/kid-form.ts`:
 ```ts
-import { CLUBS } from './clubs';
+import { clubById } from './clubs';
 import { isValidISODate } from './dates';
-import { FLAGS } from './flags';
+import { isFlagCode } from './flags';
 
 export interface KidFields {
   name: string; photo_url: string | null; flag: string; club: string;
@@ -2194,8 +2423,8 @@ export function parseKidForm(fd: FormData): { ok: true; value: KidFields } | { o
     value: {
       name,
       photo_url: photo || null,
-      flag: FLAGS.some((f) => f.code === flagRaw) ? flagRaw : 'EG',
-      club: CLUBS.some((c) => c.slug === clubRaw) ? clubRaw : 'st-timothy',
+      flag: isFlagCode(flagRaw) ? flagRaw : 'EG',
+      club: clubById(clubRaw).id,
       ssk,
       joined_on,
       active: fd.get('active') === 'on',
@@ -2323,17 +2552,86 @@ export function PhotoUploader({ initialUrl }: { initialUrl: string | null }) {
 }
 ```
 
-- [ ] **Step 5: KidForm**
+- [ ] **Step 5: Flag and club pickers**
+
+Two-step club choice keeps a 500+ club list usable on a phone: pick the club's country, then the club (grouped by league), with a live logo preview.
+
+`src/app/(teacher)/kids/Pickers.tsx`:
+```tsx
+'use client';
+import { useState } from 'react';
+import { ClubCrest } from '@/components/ClubCrest';
+import { Flag } from '@/components/Flag';
+import { CLUB_COUNTRIES, CLUBS, clubById, type Club } from '@/lib/clubs';
+import { FLAGS } from '@/lib/flags';
+
+const field = 'flex-1 rounded-lg bg-white px-3 py-2 text-black';
+
+export function FlagPicker({ initial }: { initial: string }) {
+  const [code, setCode] = useState(initial);
+  return (
+    <label className="flex flex-col gap-1 text-sm">Country flag
+      <span className="flex items-center gap-3">
+        <select name="flag" value={code} onChange={(e) => setCode(e.target.value)} className={field}>
+          {FLAGS.map((f) => <option key={f.code} value={f.code}>{f.name}</option>)}
+        </select>
+        <span className="w-12"><Flag code={code} /></span>
+      </span>
+    </label>
+  );
+}
+
+function byLeague(clubs: Club[]): [string, Club[]][] {
+  const groups = new Map<string, Club[]>();
+  for (const c of clubs) groups.set(c.league || 'Other', [...(groups.get(c.league || 'Other') ?? []), c]);
+  return [...groups.entries()];
+}
+
+export function ClubPicker({ initial }: { initial: string }) {
+  const start = clubById(initial);
+  const [country, setCountry] = useState(start.country);
+  const [club, setClub] = useState(start.id);
+  const clubs = CLUBS.filter((c) => c.country === country);
+
+  function changeCountry(next: string) {
+    setCountry(next);
+    setClub(CLUBS.find((c) => c.country === next)?.id ?? 'st-timothy');
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <label className="flex flex-col gap-1 text-sm">Club country
+        <select value={country} onChange={(e) => changeCountry(e.target.value)} className={field}>
+          {CLUB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </label>
+      <label className="flex flex-col gap-1 text-sm">Club
+        <span className="flex items-center gap-3">
+          <select name="club" value={club} onChange={(e) => setClub(e.target.value)} className={field}>
+            {byLeague(clubs).map(([league, list]) => (
+              <optgroup key={league} label={league}>
+                {list.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </optgroup>
+            ))}
+          </select>
+          <span className="w-12"><ClubCrest club={club} /></span>
+        </span>
+      </label>
+    </div>
+  );
+}
+```
+
+- [ ] **Step 6: KidForm**
 
 `src/app/(teacher)/kids/KidForm.tsx`:
 ```tsx
 'use client';
 import { useActionState } from 'react';
-import { CLUBS } from '@/lib/clubs';
-import { FLAGS } from '@/lib/flags';
 import type { KidFields } from '@/lib/kid-form';
 import { saveKid } from './actions';
 import { PhotoUploader } from './PhotoUploader';
+import { ClubPicker, FlagPicker } from './Pickers';
 
 const field = 'rounded-lg bg-white px-3 py-2 text-black';
 
@@ -2345,17 +2643,9 @@ export function KidForm({ id, initial }: { id: string | null; initial: KidFields
         <input name="name" required defaultValue={initial.name} className={field} />
       </label>
       <PhotoUploader initialUrl={initial.photo_url} />
+      <FlagPicker initial={initial.flag} />
+      <ClubPicker initial={initial.club} />
       <div className="grid grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-sm">Country
-          <select name="flag" defaultValue={initial.flag} className={field}>
-            {FLAGS.map((f) => <option key={f.code} value={f.code}>{f.name}</option>)}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">Club
-          <select name="club" defaultValue={initial.club} className={field}>
-            {CLUBS.map((c) => <option key={c.slug} value={c.slug}>{c.name}</option>)}
-          </select>
-        </label>
         <label className="flex flex-col gap-1 text-sm">SSK (Social Skills 0–99, blank = not rated)
           <input name="ssk" type="number" min={0} max={99} defaultValue={initial.ssk ?? ''} className={field} />
         </label>
@@ -2373,7 +2663,7 @@ export function KidForm({ id, initial }: { id: string | null; initial: KidFields
 }
 ```
 
-- [ ] **Step 6: Kids list, new, edit pages**
+- [ ] **Step 7: Kids list, new, edit pages**
 
 `src/app/(teacher)/kids/page.tsx`:
 ```tsx
@@ -2465,7 +2755,7 @@ export default async function EditKidPage({ params }: { params: Promise<{ id: st
 ```
 (`KidRow` has extra fields `id`/`public_code`; `KidForm` only reads the `KidFields` ones — pass `initial={kid}` works because `KidRow` is a structural superset.)
 
-- [ ] **Step 7: Printable QR sheet**
+- [ ] **Step 8: Printable QR sheet**
 
 `src/app/(teacher)/kids/qr/page.tsx`:
 ```tsx
@@ -2500,11 +2790,11 @@ export default async function QrSheet() {
 }
 ```
 
-- [ ] **Step 8: Verify**
+- [ ] **Step 9: Verify**
 
 `npm test` → PASS. Browser: add a test kid with a photo → cutout preview appears → "Use cutout" → Save → list shows photo; open kid → card shows the cutout, QR renders, "Open public card" works. Set SSK 80 → card SSK 80. Untick Active → card shows "Retired", kid disappears from `/log` and `/leaderboard`. `/kids/qr` → print preview shows a 3-column grid. Delete the test kid afterwards in the Supabase dashboard.
 
-- [ ] **Step 9: Commit**
+- [ ] **Step 10: Commit**
 
 ```bash
 git add src/lib/kid-form.ts src/lib/kid-form.test.ts src/lib/qr.ts "src/app/(teacher)/kids"
@@ -2513,13 +2803,13 @@ git commit -m "feat: kids management with photo cutout and QR codes"
 
 ---
 
-### Task 10: Admin settings and teacher accounts
+### Task 11: Admin settings and teacher accounts
 
 **Files:**
 - Create: `src/app/(teacher)/settings/page.tsx`, `src/app/(teacher)/settings/actions.ts`
 
 **Interfaces:**
-- Consumes: `requireAdmin`, `ConfirmButton` (Task 6); `createAdminClient` (Task 4); `isValidISODate` (Task 7).
+- Consumes: `requireAdmin`, `ConfirmButton` (Task 7); `createAdminClient` (Task 5); `isValidISODate` (Task 8).
 - Produces:
 ```ts
 export async function saveSettings(fd: FormData): Promise<void>;
@@ -2674,7 +2964,7 @@ git commit -m "feat: admin settings and teacher accounts"
 
 ---
 
-### Task 11: End-to-end test and README
+### Task 12: End-to-end test and README
 
 **Files:**
 - Create: `playwright.config.ts`, `e2e/flow.spec.ts`, `README.md`

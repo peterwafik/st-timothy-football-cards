@@ -112,9 +112,14 @@ Six stats on a 0–99 scale. Every stat starts at 0 for a new kid.
   the sample cards.
 - Text colour adapts per tier (dark text on gold/silver/bronze, light on others).
 
-Flags: a selectable list of countries (flag emoji / SVG), default Egypt.
-Clubs: a selectable list of popular club crests plus a "St. Timothy" crest, default
-St. Timothy.
+Flags: dropdown of every country flag (~260, incl. England/Scotland/Wales), SVGs from
+`country-flag-icons`, default Egypt.
+Clubs: real club logos, chosen in two dropdowns — club country, then club (grouped by
+league), with a live logo preview. Catalog = every club in the top 25 European leagues
+(github.com/luukhopman/football-logos) + a curated rest-of-world list (Egypt, Saudi Arabia,
+Brazil, Argentina, MLS, Mexico, Morocco, Tunisia, Qatar, UAE) fetched from TheSportsDB.
+Logos are downloaded once by a script and self-hosted. Default club: St. Timothy (drawn
+shield).
 
 Template sharpness: start with the CSS/SVG redraw. Optional later upgrade: upscale the
 11 templates via Higgsfield (11 credits), **only after explicit user approval**.
@@ -169,7 +174,7 @@ app/(teacher)/log, adjust, kids, history, settings, login
 components/PlayerCard.tsx, QrSheet.tsx, KidPicker.tsx
 lib/scoring.ts, lib/supabase/*.ts
 supabase/migrations/*.sql, supabase/seed.sql
-public/templates/0.9.png … 10.png, public/clubs/*, 
+public/templates/0.9.png … 10.png, public/flags/*.svg, public/clubs/<country>/<club>.png
 ```
 
 ## 10. Initial data
