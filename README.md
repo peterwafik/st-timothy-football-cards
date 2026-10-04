@@ -3,6 +3,8 @@
 Sunday School spiritual-growth tracker: every kid gets a FIFA-style card whose stats grow as teachers log
 Odas, Fasl, Nota Ro7eya, Tasbe7a, Dars Ketab and Discipline. Each kid has a QR code that opens their card.
 
+See docs/setup-checklist.md for the full first-time setup.
+
 ## Run locally
 1. `npm install`
 2. Copy `.env.example` to `.env.local` and fill in the Supabase URL/keys.
