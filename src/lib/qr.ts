@@ -1,9 +1,9 @@
 import 'server-only';
 import QRCode from 'qrcode';
+import { siteBaseUrl } from './site-url';
 
 export function cardUrl(code: string): string {
-  const base = (process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').replace(/\/$/, '');
-  return `${base}/card/${code}`;
+  return `${siteBaseUrl()}/card/${code}`;
 }
 
 export function qrDataUrl(code: string): Promise<string> {
