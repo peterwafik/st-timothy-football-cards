@@ -18,6 +18,7 @@ test('flags: Egypt first, home nations present, every file exists', () => {
 
 test('clubs: St. Timothy is default, ids unique, every logo file exists', () => {
   expect(CLUBS[0].id).toBe('st-timothy');
+  expect(CLUBS[0].logo).toBe('/st-timothy-logo.png'); // the church's own logo, not a drawn shield
   expect(clubById('does-not-exist').id).toBe('st-timothy');
   expect(new Set(CLUBS.map((c) => c.id)).size).toBe(CLUBS.length);
   for (const c of CLUBS) {

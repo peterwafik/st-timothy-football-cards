@@ -8,7 +8,7 @@ export function SiteHeader({ link }: { link?: { href: string; label: string } })
   return (
     <header className="flex items-center gap-3 py-5">
       <Link href="/" className="flex flex-1 items-center gap-3">
-        <span className="block w-8"><ClubCrest club="st-timothy" /></span>
+        <span className="block w-11"><ClubCrest club="st-timothy" /></span>
         <span className="font-stadium text-lg font-semibold sm:text-xl">St. Timothy Sunday School</span>
       </Link>
       {link && <Link href={link.href} className={PILL}>{link.label}</Link>}
