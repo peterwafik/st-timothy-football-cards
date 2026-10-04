@@ -115,6 +115,37 @@ describe('computeClass stats', () => {
   });
 });
 
+describe('season start', () => {
+  test('entries and adjustments before seasonStart are ignored for score and stats', () => {
+    const kids = [{ id: 'a', joinedOn: '2025-10-01', active: true, ssk: null }];
+    const entries = [
+      { kidId: 'a', activityKey: 'fasl', date: '2026-05-01' }, // last season
+      { kidId: 'a', activityKey: 'fasl', date: '2026-10-09' },
+      { kidId: 'a', activityKey: 'fasl', date: '2026-10-02' },
+    ];
+    const adjustments = [
+      { kidId: 'a', points: -50, date: '2026-06-01' }, // last season
+      { kidId: 'a', points: 30, date: '2026-10-05' },
+    ];
+    const r = computeClass(input({ kids, entries, adjustments, seasonStart: '2026-10-01' })).get('a')!;
+    expect(r.score).toBe(230);
+    expect(r.stats.SSA).toBe(99);
+  });
+
+  test('last season sessions do not count as held for this season', () => {
+    const kids = [
+      { id: 'a', joinedOn: '2025-10-01', active: true, ssk: null },
+      { id: 'b', joinedOn: '2025-10-01', active: true, ssk: null },
+    ];
+    const entries = [
+      { kidId: 'b', activityKey: 'odas', date: '2026-04-01' }, // last season, a missed it
+      { kidId: 'a', activityKey: 'odas', date: '2026-10-03' },
+      { kidId: 'b', activityKey: 'odas', date: '2026-10-03' },
+    ];
+    expect(computeClass(input({ kids, entries, seasonStart: '2026-10-01' })).get('a')!.stats.CHA).toBe(99);
+  });
+});
+
 describe('tiers', () => {
   test('22 distinct scores over 11 tiers gives 2 per tier', () => {
     const rows = Array.from({ length: 22 }, (_, i) => ({ kidId: `k${i}`, score: 1000 - i }));

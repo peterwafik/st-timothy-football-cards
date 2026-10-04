@@ -13,6 +13,8 @@ export interface ClassInput {
   entries: EntryInput[];
   adjustments: AdjustmentInput[];
   tierCount: number;
+  /** Entries and adjustments dated before this (YYYY-MM-DD) belong to an earlier season and are ignored. */
+  seasonStart?: string;
 }
 export interface KidResult {
   kidId: string;
@@ -28,12 +30,15 @@ const BEH_DEDUCTION_PENALTY = 5;
 const clampStat = (n: number) => Math.min(99, Math.max(0, Math.round(n)));
 
 export function computeClass(input: ClassInput): Map<string, KidResult> {
+  const seasonStart = input.seasonStart ?? '';
+  const entriesThisSeason = input.entries.filter((e) => e.date >= seasonStart);
+  const adjustmentsThisSeason = input.adjustments.filter((a) => a.date >= seasonStart);
   const activityByKey = new Map(input.activities.map((a) => [a.key, a]));
 
   // Session = "activityKey|date"; grouped by the stat it feeds.
   const heldByStat = new Map<ActivityStat, Set<string>>();
   const entriesByKid = new Map<string, EntryInput[]>();
-  for (const e of input.entries) {
+  for (const e of entriesThisSeason) {
     const activity = activityByKey.get(e.activityKey);
     if (!activity) continue;
     let held = heldByStat.get(activity.stat);
@@ -47,7 +52,7 @@ export function computeClass(input: ClassInput): Map<string, KidResult> {
   const results = new Map<string, KidResult>();
   for (const kid of input.kids) {
     const kidEntries = entriesByKid.get(kid.id) ?? [];
-    const kidAdjustments = input.adjustments.filter((a) => a.kidId === kid.id);
+    const kidAdjustments = adjustmentsThisSeason.filter((a) => a.kidId === kid.id);
 
     let score = 0;
     for (const e of kidEntries) score += activityByKey.get(e.activityKey)!.points;

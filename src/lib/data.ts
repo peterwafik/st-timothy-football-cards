@@ -33,6 +33,7 @@ export async function loadClassSnapshot(): Promise<ClassSnapshot> {
     entries: entries.map((e) => ({ kidId: e.kid_id, activityKey: e.activity_key, date: e.date })),
     adjustments: adjustments.map((a) => ({ kidId: a.kid_id, points: a.points, date: a.date })),
     tierCount: settings.tier_count,
+    seasonStart: settings.season_start,
   });
   return { kids, activities, results, settings };
 }
