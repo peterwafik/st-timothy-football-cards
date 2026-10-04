@@ -58,5 +58,5 @@ test('email matching ignores case', async () => {
 
 test('a failed teacher insert is reported, not hidden', async () => {
   const f = fakeDeps([], 'db down');
-  expect(await ensureTeacherAccount(f.deps, input)).toEqual({ ok: false, error: 'Login created but could not add as teacher: db down' });
+  expect(await ensureTeacherAccount(f.deps, input)).toEqual({ ok: false, error: 'Login created but could not add as servant: db down' });
 });

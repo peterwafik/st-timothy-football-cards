@@ -44,6 +44,6 @@ export async function ensureTeacherAccount(
   }
 
   const { error } = await deps.upsertTeacher({ user_id: userId, name: input.name, role: input.role });
-  if (error) return { ok: false, error: `Login created but could not add as teacher: ${error.message}` };
+  if (error) return { ok: false, error: `Login created but could not add as servant: ${error.message}` };
   return { ok: true, existed };
 }

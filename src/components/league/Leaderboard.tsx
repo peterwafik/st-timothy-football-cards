@@ -9,7 +9,7 @@ export function Leaderboard({
   rows,
   season,
   showLogin = false,
-  emptyMessage = 'No players yet. Teachers can add kids from the Kids page.',
+  emptyMessage = 'No players yet. Servants can add kids from the Kids page.',
 }: {
   rows: LeagueRow[];
   season: string;

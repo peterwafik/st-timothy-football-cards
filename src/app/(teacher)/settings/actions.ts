@@ -49,6 +49,6 @@ export async function removeTeacher(userId: string): Promise<string | void> {
   const { userId: me } = await requireAdmin();
   if (userId === me) return 'You cannot remove yourself.';
   const { error } = await createAdminClient().from('teachers').delete().eq('user_id', userId);
-  if (error) return 'Could not remove this teacher. Try again.';
+  if (error) return 'Could not remove this servant. Try again.';
   revalidatePath('/settings');
 }

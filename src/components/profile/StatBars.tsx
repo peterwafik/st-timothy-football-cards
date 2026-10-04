@@ -23,7 +23,7 @@ export function StatBars({ stats, sskRated }: { stats: Record<StatKey, number>; 
             <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-chalk/10" role="presentation">
               <div className="h-full rounded-full" style={{ width: `${pending ? 0 : value}%`, background: TONE[statTone(value)] }} />
             </div>
-            {pending && <p className="mt-1 font-card text-sm text-chalk/60">Rated by your teachers later in the year.</p>}
+            {pending && <p className="mt-1 font-card text-sm text-chalk/60">Rated by your servants later in the year.</p>}
           </li>
         );
       })}

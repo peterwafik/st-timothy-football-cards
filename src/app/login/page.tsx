@@ -10,7 +10,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   const initial = !isSupabaseConfigured()
     ? NOT_CONFIGURED_MESSAGE
     : error === 'not-teacher'
-      ? 'This account is not a teacher. Ask the admin to add you.'
+      ? 'This account is not a servant. Ask the admin to add you.'
       : null;
   return (
     <StadiumBackground>

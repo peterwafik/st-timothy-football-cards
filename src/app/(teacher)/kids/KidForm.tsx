@@ -34,7 +34,7 @@ export function KidForm({ id, initial }: { id: string | null; initial: KidFields
 
       <Panel title="In the squad">
         <div className="grid gap-5 sm:grid-cols-2">
-          <Label text="Social Skills (SSK)" hint="0–99, rated by the teachers. Leave empty until rated.">
+          <Label text="Social Skills (SSK)" hint="0–99, rated by the servants. Leave empty until rated.">
             <input name="ssk" type="number" min={0} max={99} defaultValue={initial.ssk ?? ''} className={field} />
           </Label>
           <Label text="Joined on" hint="Weeks before this don't count against the kid.">

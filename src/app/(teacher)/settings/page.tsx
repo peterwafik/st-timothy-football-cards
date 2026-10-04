@@ -56,14 +56,14 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
         <div><button className={buttonPrimary}>Save settings</button></div>
       </form>
 
-      <Panel title="Teachers">
+      <Panel title="Servants">
         <ul className="mb-6 divide-y divide-chalk/10">
           {(teachers ?? []).map((t) => (
             <li key={t.user_id} className="flex items-center gap-3 py-3">
               <Avatar name={t.name} photoUrl={null} size={40} />
               <span className="flex-1 font-card text-lg font-bold">{t.name}{t.user_id === userId && <span className="font-medium text-chalk/60"> (you)</span>}</span>
               <span className={`rounded-full px-3 py-0.5 font-card text-sm font-bold ${t.role === 'admin' ? 'bg-trophy text-dugout' : 'bg-chalk/15'}`}>
-                {t.role === 'admin' ? 'Admin' : 'Teacher'}
+                {t.role === 'admin' ? 'Admin' : 'Servant'}
               </span>
               {t.user_id !== userId && (
                 <ConfirmButton label="Remove" confirmLabel="Confirm remove" action={removeTeacher.bind(null, t.user_id)} />
@@ -71,7 +71,7 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
             </li>
           ))}
         </ul>
-        <h3 className="mb-3 font-stadium text-2xl font-bold">Add a teacher</h3>
+        <h3 className="mb-3 font-stadium text-2xl font-bold">Add a servant</h3>
         <form action={createTeacher} className="grid gap-4 sm:grid-cols-2">
           <Label text="Name"><input name="name" required className={field} /></Label>
           <Label text="Email"><input name="email" type="email" required className={field} /></Label>
@@ -80,11 +80,11 @@ export default async function SettingsPage({ searchParams }: { searchParams: Pro
           </Label>
           <Label text="Role">
             <select name="role" className={field} defaultValue="teacher">
-              <option value="teacher">Teacher</option>
+              <option value="teacher">Servant</option>
               <option value="admin">Admin</option>
             </select>
           </Label>
-          <div className="sm:col-span-2"><button className={buttonPrimary}>Add teacher</button></div>
+          <div className="sm:col-span-2"><button className={buttonPrimary}>Add servant</button></div>
         </form>
       </Panel>
     </div>
