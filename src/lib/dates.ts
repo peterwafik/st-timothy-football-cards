@@ -14,3 +14,8 @@ export function isValidISODate(s: string): boolean {
 export function isFutureDate(date: string, today: string): boolean {
   return date > today;
 }
+
+/** Today's date (YYYY-MM-DD) in Egypt, regardless of the server's clock (Vercel runs in UTC). */
+export function todayInCairo(now: Date = new Date()): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+}

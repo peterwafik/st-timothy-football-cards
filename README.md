@@ -25,3 +25,11 @@ Tests: `npm test` (unit) · `npm run e2e` (needs E2E_EMAIL/E2E_PASSWORD in .env.
   RIB←Dars Ketab, BEH←Discipline (−5 per deduction), SSK = manual teacher rating.
 - Score = points of every activity + bonuses − deductions. Point values are editable in Settings.
 - Kids are ranked by score into tiers (default 11): 1st = crystal card … 11th = bronze. Kids with 0 points are bronze.
+
+## Notes
+- **End-to-end test:** `npm run e2e` adds and then deletes a temporary kid, and briefly logs a Fasl for today. Run it against a
+  separate test Supabase project (or at a quiet time), since a new session briefly lowers other kids' SSA until it is undone.
+- **Photo background removal** uses `@imgly/background-removal` (AGPL-3.0), which runs in the teacher's browser and downloads its
+  model from IMG.LY's servers the first time. Fine for a non-commercial church site; review the licence before any commercial use.
+- **Card previews without a database:** `/dev/cards` (all tiers) and `/dev/leaderboard` (league table with sample data,
+  add `?preseason=1` for the kick-off view). Both are disabled in production builds.

@@ -1,5 +1,6 @@
 'use client';
 import { useActionState } from 'react';
+import { useFormSubmit } from '@/components/useFormSubmit';
 import type { KidFields } from '@/lib/kid-form';
 import { saveKid } from './actions';
 import { PhotoUploader } from './PhotoUploader';
@@ -9,8 +10,9 @@ const field = 'rounded-lg bg-white px-3 py-2 text-black';
 
 export function KidForm({ id, initial }: { id: string | null; initial: KidFields }) {
   const [error, action, pending] = useActionState(saveKid.bind(null, id), null);
+  const onSubmit = useFormSubmit(action);
   return (
-    <form action={action} className="flex flex-col gap-3">
+    <form onSubmit={onSubmit} className="flex flex-col gap-3">
       <label className="flex flex-col gap-1 text-sm">Name
         <input name="name" required defaultValue={initial.name} className={field} />
       </label>

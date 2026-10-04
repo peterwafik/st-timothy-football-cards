@@ -7,7 +7,12 @@ export interface KidFields {
   ssk: number | null; joined_on: string; active: boolean;
 }
 
-export function parseKidForm(fd: FormData): { ok: true; value: KidFields } | { ok: false; error: string } {
+const OUR_PHOTOS = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/photos/`;
+
+export function parseKidForm(
+  fd: FormData,
+  { photoPrefix = OUR_PHOTOS }: { photoPrefix?: string } = {},
+): { ok: true; value: KidFields } | { ok: false; error: string } {
   const name = String(fd.get('name') ?? '').trim().replace(/\s+/g, ' ');
   if (!name) return { ok: false, error: 'Name is required.' };
   if (name.length > 40) return { ok: false, error: 'Name is too long (max 40).' };
@@ -25,6 +30,8 @@ export function parseKidForm(fd: FormData): { ok: true; value: KidFields } | { o
   const flagRaw = String(fd.get('flag') ?? '');
   const clubRaw = String(fd.get('club') ?? '');
   const photo = String(fd.get('photo_url') ?? '').trim();
+  // Only photos uploaded to our own storage end up on the public card.
+  if (photo && !photo.startsWith(photoPrefix)) return { ok: false, error: 'Use the photo button to add a photo.' };
 
   return {
     ok: true,

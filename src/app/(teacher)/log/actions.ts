@@ -1,6 +1,6 @@
 'use server';
 import { requireTeacher } from '@/lib/auth';
-import { isFutureDate, isValidISODate, toLocalISODate } from '@/lib/dates';
+import { isFutureDate, isValidISODate, todayInCairo } from '@/lib/dates';
 import { summarizeInsert } from '@/lib/log-result';
 
 export async function getLoggedKidIds(activityKey: string, date: string): Promise<string[]> {
@@ -15,9 +15,7 @@ export type LogResult = { ok: true; message: string } | { ok: false; error: stri
 export async function logSession(input: { activityKey: string; date: string; kidIds: string[] }): Promise<LogResult> {
   const { supabase } = await requireTeacher();
   if (!isValidISODate(input.date)) return { ok: false, error: 'Pick a valid date.' };
-  // Allow one day of slack: the server runs in UTC, teachers are in Egypt (UTC+2/+3).
-  const tomorrow = toLocalISODate(new Date(Date.now() + 24 * 60 * 60 * 1000));
-  if (isFutureDate(input.date, tomorrow)) return { ok: false, error: 'You can’t log a future date.' };
+  if (isFutureDate(input.date, todayInCairo())) return { ok: false, error: 'You can’t log a future date.' };
   const kidIds = [...new Set(input.kidIds)];
   if (kidIds.length === 0) return { ok: false, error: 'Tick at least one kid.' };
 

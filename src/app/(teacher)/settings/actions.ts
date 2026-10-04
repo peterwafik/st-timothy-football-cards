@@ -2,7 +2,7 @@
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { requireAdmin } from '@/lib/auth';
-import { isValidISODate } from '@/lib/dates';
+import { parseSettingsForm, type SettingsFields } from '@/lib/settings-form';
 import { createAdminClient } from '@/lib/supabase/admin';
 import { ensureTeacherAccount } from '@/lib/teacher-accounts';
 
@@ -10,22 +10,17 @@ const back = (msg: string) => redirect(`/settings?msg=${encodeURIComponent(msg)}
 
 export async function saveSettings(fd: FormData) {
   const { supabase } = await requireAdmin();
-  const tierCount = Number(fd.get('tier_count'));
-  const seasonStart = String(fd.get('season_start') ?? '');
-  if (!Number.isInteger(tierCount) || tierCount < 1 || tierCount > 11) back('Tiers must be 1–11.');
-  if (!isValidISODate(seasonStart)) back('Pick a valid season start.');
-
   const { data: activities } = await supabase.from('activities').select('key');
-  for (const a of activities ?? []) {
-    const points = Number(fd.get(`points_${a.key}`));
-    if (!Number.isInteger(points) || points < 0 || points > 10000) back('Points must be whole numbers 0–10000.');
-    await supabase.from('activities').update({ points }).eq('key', a.key);
-  }
-  const { error } = await supabase.from('settings').update({
-    tier_count: tierCount, season_start: seasonStart, leaderboard_public: fd.get('leaderboard_public') === 'on',
-  }).eq('id', 1);
+  const parsed = parseSettingsForm(fd, (activities ?? []).map((a) => a.key));
+  if (!parsed.ok) back(parsed.error);
+  const { tierCount, seasonStart, leaderboardPublic, points } = (parsed as { ok: true; value: SettingsFields }).value;
+
+  const results = await Promise.all([
+    ...Object.entries(points).map(([key, value]) => supabase.from('activities').update({ points: value }).eq('key', key)),
+    supabase.from('settings').update({ tier_count: tierCount, season_start: seasonStart, leaderboard_public: leaderboardPublic }).eq('id', 1),
+  ]);
   revalidatePath('/settings');
-  back(error ? 'Could not save settings.' : 'Settings saved.');
+  back(results.some((r) => r.error) ? 'Some settings could not be saved. Try again.' : 'Settings saved.');
 }
 
 export async function createTeacher(fd: FormData) {
@@ -50,9 +45,10 @@ export async function createTeacher(fd: FormData) {
   back(`${name} added. Share the email and temporary password with them.`);
 }
 
-export async function removeTeacher(userId: string) {
+export async function removeTeacher(userId: string): Promise<string | void> {
   const { userId: me } = await requireAdmin();
-  if (userId === me) back('You cannot remove yourself.');
-  await createAdminClient().from('teachers').delete().eq('user_id', userId);
+  if (userId === me) return 'You cannot remove yourself.';
+  const { error } = await createAdminClient().from('teachers').delete().eq('user_id', userId);
+  if (error) return 'Could not remove this teacher. Try again.';
   revalidatePath('/settings');
 }

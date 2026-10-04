@@ -1,5 +1,6 @@
 'use server';
 import { redirect } from 'next/navigation';
+import { loginErrorMessage } from '@/lib/login-error';
 import { isSupabaseConfigured, NOT_CONFIGURED_MESSAGE } from '@/lib/supabase/config';
 import { createClient } from '@/lib/supabase/server';
 
@@ -10,6 +11,6 @@ export async function signIn(_prev: string | null, formData: FormData): Promise<
   if (!isSupabaseConfigured()) return NOT_CONFIGURED_MESSAGE;
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return 'Wrong email or password.';
+  if (error) return loginErrorMessage(error);
   redirect('/log');
 }

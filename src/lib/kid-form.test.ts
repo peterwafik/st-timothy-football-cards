@@ -28,9 +28,20 @@ test('keeps a real club id and a home-nation flag', () => {
   expect(r.ok && r.value.flag).toBe('GB-ENG');
 });
 test('unknown flag/club fall back to defaults; unchecked active is false', () => {
-  const { active: _drop, ...rest } = base;
+  const rest: Record<string, string> = { ...base };
+  delete rest.active;
   const r = parseKidForm(fd({ ...rest, flag: 'XX', club: 'nope' }));
   expect(r.ok && r.value.flag).toBe('EG');
   expect(r.ok && r.value.club).toBe('st-timothy');
   expect(r.ok && r.value.active).toBe(false);
+});
+
+test('photo must come from our own photo storage', () => {
+  const prefix = 'https://abc.supabase.co/storage/v1/object/public/photos/';
+  const ours = parseKidForm(fd({ ...base, photo_url: `${prefix}x.png` }), { photoPrefix: prefix });
+  expect(ours.ok && ours.value.photo_url).toBe(`${prefix}x.png`);
+  expect(parseKidForm(fd({ ...base, photo_url: 'https://elsewhere.example/x.png' }), { photoPrefix: prefix })).toEqual({
+    ok: false,
+    error: 'Use the photo button to add a photo.',
+  });
 });

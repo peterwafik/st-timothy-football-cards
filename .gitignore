@@ -50,3 +50,4 @@ next-env.d.ts
 !.env.example
 .playwright-mcp/
 dev-server.log
+build.log

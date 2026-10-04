@@ -1,4 +1,5 @@
 import 'server-only';
+import { cache } from 'react';
 import type { CardData } from './card';
 import type { LeagueRow } from './standings';
 import { fetchAll } from './fetch-all';
@@ -15,7 +16,8 @@ export interface ClassSnapshot { kids: KidRow[]; activities: Activity[]; results
 
 const KID_COLUMNS = 'id, name, public_code, photo_url, flag, club, ssk, joined_on, active';
 
-export async function loadClassSnapshot(): Promise<ClassSnapshot> {
+// Cached per request: a page and its metadata share one load instead of reading the class twice.
+export const loadClassSnapshot = cache(async (): Promise<ClassSnapshot> => {
   const db = createAdminClient();
   const [kids, activities, entries, adjustments, settingsRes] = await Promise.all([
     fetchAll<KidRow>((f, t) => db.from('kids').select(KID_COLUMNS).order('name').range(f, t)),
@@ -38,7 +40,7 @@ export async function loadClassSnapshot(): Promise<ClassSnapshot> {
     seasonStart: settings.season_start,
   });
   return { kids, activities, results, settings };
-}
+});
 
 export function toCardData(kid: KidRow, result: KidResult, tierCount = 11): CardData {
   return {

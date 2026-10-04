@@ -54,10 +54,13 @@ export function PlayerCard({ data, width = 340, hideStats = false }: { data: Car
         </svg>
       )}
 
-      <div className="absolute text-center" style={{ left: '10%', top: '12%', width: '24%' }}>
-        <div style={{ fontSize: px(0.16), fontWeight: 700 }}>{num}</div>
-        <div style={{ fontSize: px(0.06), fontWeight: 500, marginTop: px(0.01) }}>{suffix}</div>
-      </div>
+      {data.active && (
+        // Retired players keep their card but no longer hold a rank.
+        <div className="absolute text-center" style={{ left: '10%', top: '12%', width: '24%' }}>
+          <div style={{ fontSize: px(0.16), fontWeight: 700 }}>{num}</div>
+          <div style={{ fontSize: px(0.06), fontWeight: 500, marginTop: px(0.01) }}>{suffix}</div>
+        </div>
+      )}
       <div className="absolute" style={{ left: '14%', top: '31.6%', width: '16%' }}>
         <Flag code={data.flag} />
       </div>

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest';
-import { isFutureDate, isValidISODate, toLocalISODate } from './dates';
+import { isFutureDate, isValidISODate, toLocalISODate, todayInCairo } from './dates';
 
 test('local date late in the evening stays on the same day', () => {
   expect(toLocalISODate(new Date(2026, 9, 4, 23, 30))).toBe('2026-10-04');
@@ -13,4 +13,10 @@ test('validates ISO dates', () => {
 test('future dates', () => {
   expect(isFutureDate('2026-10-05', '2026-10-04')).toBe(true);
   expect(isFutureDate('2026-10-04', '2026-10-04')).toBe(false);
+});
+
+test('today is taken in Cairo time, not the server clock (Vercel runs in UTC)', () => {
+  // 23:30 UTC on Oct 4 is already 01:30/02:30 on Oct 5 in Cairo.
+  expect(todayInCairo(new Date(Date.UTC(2026, 9, 4, 23, 30)))).toBe('2026-10-05');
+  expect(todayInCairo(new Date(Date.UTC(2026, 9, 4, 12, 0)))).toBe('2026-10-04');
 });

@@ -1,5 +1,5 @@
 import { requireTeacher } from '@/lib/auth';
-import { toLocalISODate } from '@/lib/dates';
+import { todayInCairo } from '@/lib/dates';
 import { KidForm } from '../KidForm';
 
 export default async function NewKidPage() {
@@ -7,7 +7,7 @@ export default async function NewKidPage() {
   return (
     <div className="flex flex-col gap-4">
       <h1 className="font-card text-3xl font-bold uppercase">Add kid</h1>
-      <KidForm id={null} initial={{ name: '', photo_url: null, flag: 'EG', club: 'st-timothy', ssk: null, joined_on: toLocalISODate(new Date()), active: true }} />
+      <KidForm id={null} initial={{ name: '', photo_url: null, flag: 'EG', club: 'st-timothy', ssk: null, joined_on: todayInCairo(), active: true }} />
     </div>
   );
 }
