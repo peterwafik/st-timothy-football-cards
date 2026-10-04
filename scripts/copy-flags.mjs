@@ -19,7 +19,7 @@ for (const file of fs.readdirSync(SRC).filter((f) => f.endsWith('.svg'))) {
       if (n && n !== code) name = n;
     } catch { /* unknown region code */ }
   }
-  if (!name) continue;
+  if (!name || name.startsWith('Pseudo')) continue; // XA/XB are locale test regions, not countries
   fs.copyFileSync(path.join(SRC, file), path.join(OUT, file));
   flags.push({ code, name });
 }

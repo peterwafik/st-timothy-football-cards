@@ -11,6 +11,8 @@ test('flags: Egypt first, home nations present, every file exists', () => {
   expect(FLAGS.length).toBeGreaterThan(240);
   expect(isFlagCode('EG')).toBe(true);
   expect(isFlagCode('XX')).toBe(false);
+  // Locale test regions (XA "Pseudo-Accents", XB "Pseudo-Bidi") are not countries.
+  expect(FLAGS.filter((f) => f.name.startsWith('Pseudo'))).toEqual([]);
   for (const f of FLAGS) expect(fs.existsSync(path.join('public', 'flags', `${f.code}.svg`)), f.code).toBe(true);
 });
 
