@@ -19,3 +19,19 @@ export function isFutureDate(date: string, today: string): boolean {
 export function todayInCairo(now: Date = new Date()): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Africa/Cairo', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
 }
+
+// Date-only strings are formatted in UTC so the day never shifts with the server's timezone.
+const asDate = (iso: string) => new Date(`${iso}T00:00:00Z`);
+
+/** '2026-10-04' → 'Sun 4 Oct' */
+export function formatDay(iso: string): string {
+  const d = asDate(iso);
+  const weekday = new Intl.DateTimeFormat('en-GB', { weekday: 'short', timeZone: 'UTC' }).format(d);
+  const dayMonth = new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(d);
+  return `${weekday} ${dayMonth}`;
+}
+
+/** '2026-10-01' → '1 October 2026' */
+export function formatLongDate(iso: string): string {
+  return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(asDate(iso));
+}
