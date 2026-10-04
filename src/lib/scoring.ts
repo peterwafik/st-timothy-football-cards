@@ -1,3 +1,4 @@
+import { weekStart } from './dates';
 export const STAT_KEYS = ['SSK', 'RIB', 'PRA', 'CHA', 'SSA', 'BEH'] as const;
 export type StatKey = (typeof STAT_KEYS)[number];
 export type ActivityStat = Exclude<StatKey, 'SSK'>;
@@ -35,7 +36,8 @@ export function computeClass(input: ClassInput): Map<string, KidResult> {
   const adjustmentsThisSeason = input.adjustments.filter((a) => a.date >= seasonStart);
   const activityByKey = new Map(input.activities.map((a) => [a.key, a]));
 
-  // Session = "activityKey|date"; grouped by the stat it feeds.
+  // A session is one activity in one week (Friday to Thursday): "activityKey|weekStart".
+  const sessionOf = (e: EntryInput) => `${e.activityKey}|${weekStart(e.date)}`;
   const heldByStat = new Map<ActivityStat, Set<string>>();
   const entriesByKid = new Map<string, EntryInput[]>();
   for (const e of entriesThisSeason) {
@@ -43,7 +45,7 @@ export function computeClass(input: ClassInput): Map<string, KidResult> {
     if (!activity) continue;
     let held = heldByStat.get(activity.stat);
     if (!held) heldByStat.set(activity.stat, (held = new Set()));
-    held.add(`${e.activityKey}|${e.date}`);
+    held.add(sessionOf(e));
     let list = entriesByKid.get(e.kidId);
     if (!list) entriesByKid.set(e.kidId, (list = []));
     list.push(e);
@@ -54,17 +56,24 @@ export function computeClass(input: ClassInput): Map<string, KidResult> {
     const kidEntries = entriesByKid.get(kid.id) ?? [];
     const kidAdjustments = adjustmentsThisSeason.filter((a) => a.kidId === kid.id);
 
+    // Each session scores once, even if it was logged twice in the same week.
     let score = 0;
-    for (const e of kidEntries) score += activityByKey.get(e.activityKey)!.points;
+    const scored = new Set<string>();
+    for (const e of kidEntries) {
+      if (scored.has(sessionOf(e))) continue;
+      scored.add(sessionOf(e));
+      score += activityByKey.get(e.activityKey)!.points;
+    }
     for (const a of kidAdjustments) score += a.points;
+    const joinedWeek = weekStart(kid.joinedOn);
 
     const stats = { SSK: clampStat(kid.ssk ?? 0) } as Record<StatKey, number>;
     for (const stat of ACTIVITY_STATS) {
-      const held = [...(heldByStat.get(stat) ?? [])].filter((s) => s.split('|')[1] >= kid.joinedOn).length;
+      const held = [...(heldByStat.get(stat) ?? [])].filter((s) => s.split('|')[1] >= joinedWeek).length;
       const attended = new Set(
         kidEntries
-          .filter((e) => activityByKey.get(e.activityKey)!.stat === stat && e.date >= kid.joinedOn)
-          .map((e) => `${e.activityKey}|${e.date}`),
+          .filter((e) => activityByKey.get(e.activityKey)!.stat === stat && weekStart(e.date) >= joinedWeek)
+          .map(sessionOf),
       ).size;
       stats[stat] = held === 0 ? 0 : clampStat((99 * attended) / held);
     }

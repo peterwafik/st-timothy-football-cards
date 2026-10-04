@@ -35,3 +35,19 @@ export function formatDay(iso: string): string {
 export function formatLongDate(iso: string): string {
   return new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(asDate(iso));
 }
+
+/** The Friday that starts this date's week (sessions run Friday to Thursday). */
+export function weekStart(iso: string): string {
+  const d = asDate(iso);
+  const daysSinceFriday = (d.getUTCDay() + 2) % 7; // Fri=5 → 0, Sat=6 → 1, ..., Thu=4 → 6
+  d.setUTCDate(d.getUTCDate() - daysSinceFriday);
+  return d.toISOString().slice(0, 10);
+}
+
+/** '2026-10-04' → 'Fri 2 Oct – Thu 8 Oct' (the session week this date belongs to). */
+export function weekRangeLabel(iso: string): string {
+  const start = weekStart(iso);
+  const end = asDate(start);
+  end.setUTCDate(end.getUTCDate() + 6);
+  return `${formatDay(start)} – ${formatDay(end.toISOString().slice(0, 10))}`;
+}

@@ -25,7 +25,7 @@ kids.forEach((kid, k) => {
     if ((k * 13 + s * 7) % 10 < commitment) entries.push({ kid_id: kid.id, activity_key, date, created_by: admin.id });
   });
 });
-const { error: eErr } = await db.from('entries').upsert(entries, { onConflict: 'kid_id,activity_key,date', ignoreDuplicates: true });
+const { error: eErr } = await db.from('entries').upsert(entries, { onConflict: 'kid_id,activity_key,week_start', ignoreDuplicates: true });
 if (eErr) throw new Error(eErr.message);
 
 const adjustments = [

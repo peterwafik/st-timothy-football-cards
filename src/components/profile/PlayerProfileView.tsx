@@ -5,6 +5,7 @@ import { PlayerCard } from '../PlayerCard';
 import { SiteHeader } from '../league/SiteHeader';
 import { StadiumBackground } from '../league/StadiumBackground';
 import { AttendanceList } from './AttendanceList';
+import { RadarChart } from './RadarChart';
 import { RecentActivity } from './RecentActivity';
 import { StatBars } from './StatBars';
 import { clubById } from '@/lib/clubs';
@@ -85,13 +86,18 @@ export function PlayerProfileView({ profile }: { profile: PlayerProfile }) {
       </section>
 
       <section className={`mt-12 ${PANEL}`}>
-        <h2 className="mb-5 font-stadium text-3xl font-bold">Match stats</h2>
+        <h2 className="mb-5 font-stadium text-3xl font-bold">Stats</h2>
         <StatBars stats={card.stats} sskRated={profile.sskRated} />
+      </section>
+
+      <section className={`mt-6 ${PANEL}`}>
+        <h2 className="mb-2 font-stadium text-3xl font-bold">Strengths & weaknesses</h2>
+        <RadarChart stats={card.stats} sskRated={profile.sskRated} />
       </section>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <section className={PANEL}>
-          <h2 className="mb-2 font-stadium text-3xl font-bold">Attendance this season</h2>
+          <h2 className="mb-2 font-stadium text-3xl font-bold">Attendance & Points</h2>
           <AttendanceList rows={profile.breakdown} />
         </section>
         <section className={PANEL}>

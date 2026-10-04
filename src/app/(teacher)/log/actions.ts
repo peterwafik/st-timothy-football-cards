@@ -1,12 +1,13 @@
 'use server';
 import { requireTeacher } from '@/lib/auth';
-import { isFutureDate, isValidISODate, todayInCairo } from '@/lib/dates';
+import { isFutureDate, isValidISODate, todayInCairo, weekStart } from '@/lib/dates';
 import { summarizeInsert } from '@/lib/log-result';
 
+// Kids already logged for this activity in the same week (Friday to Thursday) as `date`.
 export async function getLoggedKidIds(activityKey: string, date: string): Promise<string[]> {
   if (!isValidISODate(date)) return [];
   const { supabase } = await requireTeacher();
-  const { data } = await supabase.from('entries').select('kid_id').eq('activity_key', activityKey).eq('date', date);
+  const { data } = await supabase.from('entries').select('kid_id').eq('activity_key', activityKey).eq('week_start', weekStart(date));
   return (data ?? []).map((r) => r.kid_id);
 }
 
@@ -22,7 +23,7 @@ export async function logSession(input: { activityKey: string; date: string; kid
   const rows = kidIds.map((kid_id) => ({ kid_id, activity_key: input.activityKey, date: input.date }));
   const { data, error } = await supabase
     .from('entries')
-    .upsert(rows, { onConflict: 'kid_id,activity_key,date', ignoreDuplicates: true })
+    .upsert(rows, { onConflict: 'kid_id,activity_key,week_start', ignoreDuplicates: true })
     .select('id');
   if (error) return { ok: false, error: 'Could not save. Check your connection and try again.' };
   return { ok: true, message: summarizeInsert(kidIds.length, data?.length ?? 0).message };

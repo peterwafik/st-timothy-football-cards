@@ -1,11 +1,10 @@
 import type { ActivityBreakdown } from '@/lib/profile';
-import { STAT_LABELS } from '@/lib/stat-labels';
 
 const MAX_DOTS = 16;
 
-// One dot per session held: filled when the kid was there. Long seasons fall back to a bar.
+// One dot per week the activity was held: filled when the kid was there. Long seasons fall back to a bar.
 function Sessions({ attended, held }: { attended: number; held: number }) {
-  if (held === 0) return <span className="font-card text-chalk/60">No sessions yet</span>;
+  if (held === 0) return <span className="font-card text-chalk/60">Not held yet</span>;
   if (held > MAX_DOTS) {
     return (
       <div className="h-2.5 w-40 overflow-hidden rounded-full bg-chalk/15">
@@ -29,13 +28,12 @@ export function AttendanceList({ rows }: { rows: ActivityBreakdown[] }) {
         <li key={r.key} className="flex items-center gap-3 py-3 sm:gap-4">
           <div className="w-28 shrink-0 sm:w-44">
             <p className="font-card text-xl font-bold">{r.name}</p>
-            <p className="font-card text-sm text-chalk/60">{STAT_LABELS[r.stat]}</p>
           </div>
           <div className="min-w-0 flex-1">
             <Sessions attended={r.attended} held={r.held} />
             {r.held > 0 && (
               <p className="mt-1 font-card text-sm text-chalk/70">
-                {r.attended} of {r.held} {r.held === 1 ? 'session' : 'sessions'}
+                {r.attended} of {r.held} {r.held === 1 ? 'week' : 'weeks'}
               </p>
             )}
           </div>

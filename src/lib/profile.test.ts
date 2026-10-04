@@ -23,12 +23,22 @@ describe('activityBreakdown', () => {
     ]);
   });
 
-  test('a late joiner is not counted against sessions before they joined', () => {
+  test('weeks run Friday to Thursday: two entries in one week are one session', () => {
+    const entries = [
+      { kidId: 'a', activityKey: 'fasl', date: '2026-10-02' },
+      { kidId: 'a', activityKey: 'fasl', date: '2026-10-04' },
+      { kidId: 'b', activityKey: 'fasl', date: '2026-10-09' },
+    ];
+    const fasl = activityBreakdown({ activities: ACTIVITIES, entries, joinedOn: '2026-10-02', seasonStart: '2026-10-02' }, 'a')[1];
+    expect(fasl).toEqual({ key: 'fasl', name: 'Fasl', stat: 'SSA', attended: 1, held: 2, points: 100 });
+  });
+
+  test('a late joiner is not counted against weeks before they joined', () => {
     const entries = [
       { kidId: 'b', activityKey: 'fasl', date: '2026-10-02' },
       { kidId: 'a', activityKey: 'fasl', date: '2026-10-09' },
     ];
-    const fasl = activityBreakdown({ activities: ACTIVITIES, entries, joinedOn: '2026-10-05', seasonStart: '2026-10-01' }, 'a')[1];
+    const fasl = activityBreakdown({ activities: ACTIVITIES, entries, joinedOn: '2026-10-09', seasonStart: '2026-10-01' }, 'a')[1];
     expect(fasl).toMatchObject({ attended: 1, held: 1 });
   });
 });

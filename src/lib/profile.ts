@@ -1,3 +1,4 @@
+import { weekStart } from './dates';
 import type { Activity, ActivityStat, EntryInput } from './scoring';
 
 export interface ActivityBreakdown {
@@ -9,16 +10,21 @@ export interface ActivityBreakdown {
   points: number;
 }
 
-/** Per activity: sessions held since the kid joined (this season), how many they attended, points earned. */
+/**
+ * Per activity: weekly sessions (Friday to Thursday) held this season since the kid's joining week,
+ * how many of those weeks they attended, and the points earned.
+ */
 export function activityBreakdown(
   input: { activities: Activity[]; entries: EntryInput[]; joinedOn: string; seasonStart: string },
   kidId: string,
 ): ActivityBreakdown[] {
-  const from = input.joinedOn > input.seasonStart ? input.joinedOn : input.seasonStart;
+  const joinedWeek = weekStart(input.joinedOn);
   return input.activities.map((a) => {
-    const counted = input.entries.filter((e) => e.activityKey === a.key && e.date >= from);
-    const held = new Set(counted.map((e) => e.date)).size;
-    const attended = new Set(counted.filter((e) => e.kidId === kidId).map((e) => e.date)).size;
+    const counted = input.entries.filter(
+      (e) => e.activityKey === a.key && e.date >= input.seasonStart && weekStart(e.date) >= joinedWeek,
+    );
+    const held = new Set(counted.map((e) => weekStart(e.date))).size;
+    const attended = new Set(counted.filter((e) => e.kidId === kidId).map((e) => weekStart(e.date))).size;
     return { key: a.key, name: a.name, stat: a.stat, attended, held, points: attended * a.points };
   });
 }

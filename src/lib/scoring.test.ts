@@ -45,9 +45,9 @@ describe('computeClass stats', () => {
     expect(res.get('a')!.score).toBe(300);
   });
 
-  test('sessions before joinedOn do not count against a late joiner', () => {
+  test('weeks before the joining week do not count against a late joiner', () => {
     const kids = [
-      { id: 'a', joinedOn: '2026-10-10', active: true, ssk: null },
+      { id: 'a', joinedOn: '2026-10-16', active: true, ssk: null },
       { id: 'b', joinedOn: '2026-10-01', active: true, ssk: null },
     ];
     const dates = ['2026-10-02', '2026-10-09', '2026-10-16', '2026-10-23'];
@@ -112,6 +112,37 @@ describe('computeClass stats', () => {
   test('entries for unknown activities are ignored', () => {
     const entries = [{ kidId: 'a', activityKey: 'gone', date: '2026-10-02' }];
     expect(computeClass(input({ entries })).get('a')!.score).toBe(0);
+  });
+});
+
+describe('weekly sessions (Friday to Thursday)', () => {
+  test('two entries for the same activity in one week are one session and score once', () => {
+    const kids = [
+      { id: 'a', joinedOn: '2026-10-02', active: true, ssk: null },
+      { id: 'b', joinedOn: '2026-10-02', active: true, ssk: null },
+    ];
+    const entries = [
+      { kidId: 'a', activityKey: 'fasl', date: '2026-10-02' }, // Friday
+      { kidId: 'a', activityKey: 'fasl', date: '2026-10-04' }, // Sunday, same week
+      { kidId: 'b', activityKey: 'fasl', date: '2026-10-09' }, // next week
+    ];
+    const r = computeClass(input({ kids, entries })).get('a')!;
+    expect(r.score).toBe(100);
+    expect(r.stats.SSA).toBe(50); // round(99 * 1 week attended / 2 weeks held)
+  });
+
+  test('logging on different days of the same week counts as the same session for everyone', () => {
+    const kids = [
+      { id: 'a', joinedOn: '2026-10-02', active: true, ssk: null },
+      { id: 'b', joinedOn: '2026-10-02', active: true, ssk: null },
+    ];
+    const entries = [
+      { kidId: 'a', activityKey: 'odas', date: '2026-10-04' }, // Sunday
+      { kidId: 'b', activityKey: 'odas', date: '2026-10-06' }, // Tuesday, same week
+    ];
+    const res = computeClass(input({ kids, entries }));
+    expect(res.get('a')!.stats.CHA).toBe(99);
+    expect(res.get('b')!.stats.CHA).toBe(99);
   });
 });
 

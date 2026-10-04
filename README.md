@@ -21,7 +21,9 @@ Tests: `npm test` (unit) · `npm run e2e` (needs E2E_EMAIL/E2E_PASSWORD in .env.
 3. Deploy, then print QR codes from **Kids → Print QR codes** (they use NEXT_PUBLIC_SITE_URL).
 
 ## How scoring works
-- Stats (0–99) = attendance rate since the kid joined: CHA←Odas, SSA←Fasl, PRA←Nota Ro7eya+Tasbe7a,
+- Sessions are weekly, Friday to Thursday (the first week started Friday 2 October 2026). Each activity counts at
+  most once per kid per week, whichever day it is logged.
+- Stats (0–99) = share of weeks attended since the kid's joining week: CHA←Odas, SSA←Fasl, PRA←Nota Ro7eya+Tasbe7a,
   RIB←Dars Ketab, BEH←Discipline (−5 per deduction), SSK = manual teacher rating.
 - Score = points of every activity + bonuses − deductions. Point values are editable in Settings.
 - Kids are ranked by score into tiers (default 11): 1st = crystal card … 11th = bronze. Kids with 0 points are bronze.

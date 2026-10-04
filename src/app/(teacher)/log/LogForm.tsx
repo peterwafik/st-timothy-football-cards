@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useMemo, useState, useTransition } from 'react';
-import { toLocalISODate } from '@/lib/dates';
+import { isValidISODate, toLocalISODate, weekRangeLabel } from '@/lib/dates';
 import { getLoggedKidIds, logSession } from './actions';
 
 type Kid = { id: string; name: string; photo_url: string | null };
@@ -59,6 +59,7 @@ export function LogForm({ kids, activities }: { kids: Kid[]; activities: Activit
       <div className="grid grid-cols-2 gap-3">
         <label className="flex flex-col gap-1 text-sm">Date
           <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="rounded-lg bg-white px-3 py-2 text-black" />
+          {isValidISODate(date) && <span className="text-xs text-white/70">Counts for the week {weekRangeLabel(date)}</span>}
         </label>
         <label className="flex flex-col gap-1 text-sm">Activity
           <select aria-label="Activity" value={activityKey} onChange={(e) => setActivityKey(e.target.value)} className="rounded-lg bg-white px-3 py-2 text-black">
@@ -79,7 +80,7 @@ export function LogForm({ kids, activities }: { kids: Kid[]; activities: Activit
                 <input type="checkbox" className="h-6 w-6" checked={isLogged || selected.has(k.id)} disabled={isLogged} onChange={() => toggle(k.id)} aria-label={k.name} />
                 {k.photo_url ? <img src={k.photo_url} alt="" className="h-9 w-9 rounded-full object-cover object-top" /> : <span className="h-9 w-9 rounded-full bg-white/10" />}
                 <span className="flex-1">{k.name}</span>
-                {isLogged && <span className="text-xs text-gold">✓ logged</span>}
+                {isLogged && <span className="text-xs text-gold">✓ logged this week</span>}
               </label>
             </li>
           );
