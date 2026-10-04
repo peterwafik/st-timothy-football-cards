@@ -5,6 +5,7 @@ import type { StatKey } from '@/lib/scoring';
 
 // Layout measured from last year's printed cards and the templates' own marker lines:
 // short dashes at 30% and 39.5% of the height (centred 26.4% across), divider at 63.4%, centre line at 50%.
+// The left column sits a little lower than the dashes suggest so the rank number clears the card's top edge.
 const COLUMN_CENTRE = 26.4; // % across: number, position, flag and crest share this column
 const ROWS = [68.4, 75.6, 82.8]; // % down: centre of each stat row
 const STAT_FONT = 0.06; // × card width
@@ -76,18 +77,18 @@ export function PlayerCard({ data, width = 340, hideStats = false }: { data: Car
 
       {data.active && (
         // Rank number with the playing position under it, as on last year's cards. Retired players have no rank.
-        <div className="absolute text-center" style={{ ...inColumn(24), top: '10.5%' }}>
-          <div style={{ fontSize: px(0.155), fontWeight: 700 }}>{data.tier}</div>
+        <div className="absolute text-center" style={{ ...inColumn(24), top: '15%' }}>
+          <div style={{ fontSize: px(0.145), fontWeight: 700 }}>{data.tier}</div>
           {data.position && (
             <div style={{ fontSize: px(0.06), fontWeight: 500, marginTop: px(0.015), letterSpacing: '0.04em' }}>{data.position}</div>
           )}
         </div>
       )}
-      {/* Flag sits between the template's two short dashes; the club crest just below. */}
-      <div className="absolute" style={{ ...inColumn(17), top: '30.9%' }}>
+      {/* Flag just below the template's first marker dash (it covers the second); the club crest just below. */}
+      <div className="absolute" style={{ ...inColumn(17), top: '33%' }}>
         <Flag code={data.flag} />
       </div>
-      <div className="absolute" style={{ ...inColumn(17), top: '41.5%' }}>
+      <div className="absolute" style={{ ...inColumn(15), top: '43.5%' }}>
         <ClubCrest club={data.club} />
       </div>
 
