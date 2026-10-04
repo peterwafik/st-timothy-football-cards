@@ -5,7 +5,12 @@ Done: Supabase project **st-timothy-cards** (ref `wpwaygmxtvrpjlovhmqa`, Frankfu
 created; keys + DB password in `.env.local`; migrations pushed (31 kids, 6 activities); test admin and test teacher
 created (credentials in `.env.local`: `E2E_EMAIL` / `TEST_TEACHER_EMAIL`); sample scores added; `npm run e2e` passes.
 
-Still to do: section 1 step 2 (turn off public sign-ups), clearing the sample data before real use, and section 3 (Vercel).
+Live: https://st-timothy-football-cards.vercel.app (Vercel project `st-timothy-football-cards`, team "Seven Sees").
+Code: https://github.com/peterwafik/st-timothy-football-cards (private). Every push to `main` redeploys automatically.
+Vercel env vars set: Supabase URL/anon key/service-role key (secret) and `NEXT_PUBLIC_SITE_URL`.
+
+Still to do: section 1 step 2 (turn off public sign-ups) and clearing the sample data before real use.
+QR codes printed now already point to the live address.
 
 **Sample data:** `node --env-file=.env.local scripts/clear-sample-data.mjs` removes everything the test accounts
 logged (sample scores included); `scripts/seed-sample-data.mjs` adds the samples back.
