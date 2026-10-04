@@ -1,10 +1,19 @@
 # First-time setup & go-live checklist
 
-Everything below needs a real Supabase project, which didn't exist when the app was built.
+## Status (2026-10-04)
+Done: Supabase project **st-timothy-cards** (ref `wpwaygmxtvrpjlovhmqa`, Frankfurt, free plan, org "St. Timothy")
+created; keys + DB password in `.env.local`; migrations pushed (31 kids, 6 activities); test admin and test teacher
+created (credentials in `.env.local`: `E2E_EMAIL` / `TEST_TEACHER_EMAIL`); sample scores added; `npm run e2e` passes.
+
+Still to do: section 1 step 2 (turn off public sign-ups), clearing the sample data before real use, and section 3 (Vercel).
+
+**Sample data:** `node --env-file=.env.local scripts/clear-sample-data.mjs` removes everything the test accounts
+logged (sample scores included); `scripts/seed-sample-data.mjs` adds the samples back.
 
 ## 1. Supabase (≈10 min)
 1. Create a free project at https://supabase.com (region: Frankfurt / closest to Egypt). Save the DB password.
 2. *Authentication → Sign In / Providers*: turn **off** "Allow new users to sign up" (teachers are added from Settings).
+   Direct link: https://supabase.com/dashboard/project/wpwaygmxtvrpjlovhmqa/auth/providers
 3. Copy `.env.example` to `.env.local` and fill in from *Project Settings → API Keys*:
    - `NEXT_PUBLIC_SUPABASE_URL` — Project URL
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — publishable (anon) key
