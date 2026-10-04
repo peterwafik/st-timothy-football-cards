@@ -9,12 +9,12 @@ import { isSupabaseConfigured } from './supabase/config';
 
 export interface KidRow {
   id: string; name: string; public_code: string; photo_url: string | null; flag: string;
-  club: string; ssk: number | null; joined_on: string; active: boolean;
+  club: string; ssk: number | null; joined_on: string; active: boolean; position: string | null;
 }
 export interface SettingsRow { season_start: string; tier_count: number; leaderboard_public: boolean }
 export interface ClassSnapshot { kids: KidRow[]; activities: Activity[]; results: Map<string, KidResult>; settings: SettingsRow }
 
-const KID_COLUMNS = 'id, name, public_code, photo_url, flag, club, ssk, joined_on, active';
+const KID_COLUMNS = 'id, name, public_code, photo_url, flag, club, ssk, joined_on, active, position';
 
 // Cached per request: a page and its metadata share one load instead of reading the class twice.
 export const loadClassSnapshot = cache(async (): Promise<ClassSnapshot> => {
@@ -45,7 +45,7 @@ export const loadClassSnapshot = cache(async (): Promise<ClassSnapshot> => {
 export function toCardData(kid: KidRow, result: KidResult, tierCount = 11): CardData {
   return {
     name: kid.name, photoUrl: kid.photo_url, flag: kid.flag, club: kid.club,
-    tier: result.tier ?? tierCount, stats: result.stats, active: kid.active,
+    tier: result.tier ?? tierCount, stats: result.stats, active: kid.active, position: kid.position,
   };
 }
 

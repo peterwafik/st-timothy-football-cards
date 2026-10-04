@@ -1,6 +1,6 @@
 import { ClubCrest } from './ClubCrest';
 import { Flag } from './Flag';
-import { isLightTier, nameFontScale, rankLabel, templateForTier, type CardData } from '@/lib/card';
+import { isLightTier, nameFontScale, templateForTier, type CardData } from '@/lib/card';
 import type { StatKey } from '@/lib/scoring';
 
 const LEFT: StatKey[] = ['SSK', 'RIB', 'PRA'];
@@ -10,7 +10,6 @@ const ROW_TOPS = ['67.5%', '74%', '80.5%'];
 export function PlayerCard({ data, width = 340, hideStats = false }: { data: CardData; width?: number; hideStats?: boolean }) {
   const height = (width * 257) / 182;
   const ink = isLightTier(data.tier) ? '#3a2a12' : '#ffffff';
-  const { num, suffix } = rankLabel(data.tier);
   const px = (fraction: number) => `${fraction * width}px`;
   const template = `/templates/${templateForTier(data.tier)}.png`;
 
@@ -57,8 +56,10 @@ export function PlayerCard({ data, width = 340, hideStats = false }: { data: Car
       {data.active && (
         // Retired players keep their card but no longer hold a rank.
         <div className="absolute text-center" style={{ left: '10%', top: '12%', width: '24%' }}>
-          <div style={{ fontSize: px(0.16), fontWeight: 700 }}>{num}</div>
-          <div style={{ fontSize: px(0.06), fontWeight: 500, marginTop: px(0.01) }}>{suffix}</div>
+          <div style={{ fontSize: px(0.16), fontWeight: 700 }}>{data.tier}</div>
+          {data.position && (
+            <div style={{ fontSize: px(0.065), fontWeight: 500, marginTop: px(0.01) }}>{data.position}</div>
+          )}
         </div>
       )}
       <div className="absolute" style={{ left: '14%', top: '31.6%', width: '16%' }}>

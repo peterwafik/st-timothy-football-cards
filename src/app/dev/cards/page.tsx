@@ -13,7 +13,7 @@ export default function DevCards() {
           width={240}
           data={{
             name: names[tier % names.length], photoUrl: null, flag: tier % 2 ? 'EG' : 'AR',
-            club: tier % 2 ? 'st-timothy' : CLUBS[tier]?.id ?? 'st-timothy', tier, active: tier !== 11,
+            club: tier % 2 ? 'st-timothy' : CLUBS[tier]?.id ?? 'st-timothy', tier, active: tier !== 11, position: ['ST', 'GK', 'CAM', null, 'CB', 'LW'][tier % 6],
             stats: { SSK: 0, RIB: 45, PRA: 66, CHA: 80, SSA: 99, BEH: 74 },
           }}
         />

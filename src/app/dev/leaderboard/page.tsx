@@ -25,7 +25,7 @@ export default async function DevLeaderboard({ searchParams }: { searchParams: P
     score,
     card: {
       name: kidId, photoUrl: null, flag: FLAGS[i % FLAGS.length], club: CLUBS[(i * 37) % CLUBS.length].id,
-      tier: tiers.get(kidId)!, active: true,
+      tier: tiers.get(kidId)!, active: true, position: ['ST', 'CM', 'GK', 'CB', 'RW', 'CAM'][i % 6],
       stats: { SSK: 0, RIB: 60 + (i % 5) * 7, PRA: 90 - i, CHA: 99 - i * 2, SSA: 95 - i, BEH: 80 + (i % 3) * 6 },
     },
   }));

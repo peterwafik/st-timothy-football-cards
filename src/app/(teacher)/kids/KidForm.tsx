@@ -4,7 +4,7 @@ import { useFormSubmit } from '@/components/useFormSubmit';
 import type { KidFields } from '@/lib/kid-form';
 import { saveKid } from './actions';
 import { PhotoUploader } from './PhotoUploader';
-import { ClubPicker, FlagPicker } from './Pickers';
+import { ClubPicker, FlagPicker, PositionPicker } from './Pickers';
 
 const field = 'rounded-lg bg-white px-3 py-2 text-black';
 
@@ -17,6 +17,7 @@ export function KidForm({ id, initial }: { id: string | null; initial: KidFields
         <input name="name" required defaultValue={initial.name} className={field} />
       </label>
       <PhotoUploader initialUrl={initial.photo_url} />
+      <PositionPicker initial={initial.position} />
       <FlagPicker initial={initial.flag} />
       <ClubPicker initial={initial.club} />
       <div className="grid grid-cols-2 gap-3">

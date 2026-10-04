@@ -1,10 +1,11 @@
 import { clubById } from './clubs';
 import { isValidISODate } from './dates';
 import { isFlagCode } from './flags';
+import { isPosition } from './positions';
 
 export interface KidFields {
   name: string; photo_url: string | null; flag: string; club: string;
-  ssk: number | null; joined_on: string; active: boolean;
+  ssk: number | null; joined_on: string; active: boolean; position: string | null;
 }
 
 const OUR_PHOTOS = `${process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''}/storage/v1/object/public/photos/`;
@@ -43,6 +44,7 @@ export function parseKidForm(
       ssk,
       joined_on,
       active: fd.get('active') === 'on',
+      position: isPosition(String(fd.get('position') ?? '')) ? String(fd.get('position')) : null,
     },
   };
 }

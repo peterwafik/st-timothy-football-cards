@@ -8,6 +8,7 @@ export interface CardData {
   tier: number;
   stats: Record<StatKey, number>;
   active: boolean;
+  position: string | null;
 }
 
 export function templateForTier(tier: number): string {

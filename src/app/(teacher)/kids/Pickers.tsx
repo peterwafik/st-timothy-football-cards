@@ -4,6 +4,7 @@ import { ClubCrest } from '@/components/ClubCrest';
 import { Flag } from '@/components/Flag';
 import { CLUB_COUNTRIES, CLUBS, clubById, type Club } from '@/lib/clubs';
 import { FLAGS } from '@/lib/flags';
+import { POSITIONS } from '@/lib/positions';
 
 const field = 'flex-1 rounded-lg bg-white px-3 py-2 text-black';
 
@@ -58,5 +59,18 @@ export function ClubPicker({ initial }: { initial: string }) {
         </span>
       </label>
     </div>
+  );
+}
+
+export function PositionPicker({ initial }: { initial: string | null }) {
+  return (
+    <label className="flex flex-col gap-1 text-sm">Playing position (shown on the card)
+      <select name="position" defaultValue={initial ?? ''} className={field}>
+        <option value="">No position</option>
+        {POSITIONS.map((p) => (
+          <option key={p.code} value={p.code}>{p.code} ({p.name})</option>
+        ))}
+      </select>
+    </label>
   );
 }

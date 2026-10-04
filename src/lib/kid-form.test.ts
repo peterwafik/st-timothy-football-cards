@@ -12,7 +12,7 @@ const base = { name: ' Mina Hesham ', flag: 'EG', club: 'st-timothy', ssk: '', j
 test('parses a valid kid with blank SSK as null', () => {
   expect(parseKidForm(fd(base))).toEqual({
     ok: true,
-    value: { name: 'Mina Hesham', photo_url: null, flag: 'EG', club: 'st-timothy', ssk: null, joined_on: '2026-10-01', active: true },
+    value: { name: 'Mina Hesham', photo_url: null, flag: 'EG', club: 'st-timothy', ssk: null, joined_on: '2026-10-01', active: true, position: null },
   });
 });
 test('rejects empty name', () => {
@@ -44,4 +44,13 @@ test('photo must come from our own photo storage', () => {
     ok: false,
     error: 'Use the photo button to add a photo.',
   });
+});
+
+test('position is optional and must be a real football position', () => {
+  const st = parseKidForm(fd({ ...base, position: 'ST' }));
+  expect(st.ok && st.value.position).toBe('ST');
+  const none = parseKidForm(fd({ ...base, position: '' }));
+  expect(none.ok && none.value.position).toBeNull();
+  const junk = parseKidForm(fd({ ...base, position: 'XYZ' }));
+  expect(junk.ok && junk.value.position).toBeNull();
 });
