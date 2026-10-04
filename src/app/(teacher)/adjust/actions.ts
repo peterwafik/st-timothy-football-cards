@@ -2,7 +2,8 @@
 import { requireTeacher } from '@/lib/auth';
 import { isFutureDate, isValidISODate, todayInCairo } from '@/lib/dates';
 
-export type AdjustState = { ok: boolean; message: string } | null;
+// savedAt changes on every successful save, so the form can start fresh for the next one.
+export type AdjustState = { ok: boolean; message: string; savedAt?: number } | null;
 
 export async function addAdjustment(_prev: AdjustState, formData: FormData): Promise<AdjustState> {
   const { supabase } = await requireTeacher();
@@ -20,5 +21,5 @@ export async function addAdjustment(_prev: AdjustState, formData: FormData): Pro
   const points = kind === 'deduct' ? -amount : amount;
   const { error } = await supabase.from('adjustments').insert({ kid_id: kidId, points, reason, date });
   if (error) return { ok: false, message: 'Could not save. Try again.' };
-  return { ok: true, message: `${kind === 'deduct' ? 'Deducted' : 'Added'} ${amount} points.` };
+  return { ok: true, message: `${kind === 'deduct' ? 'Deducted' : 'Added'} ${amount} points.`, savedAt: Date.now() };
 }

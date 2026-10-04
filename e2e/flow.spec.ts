@@ -25,9 +25,9 @@ test('logging Fasl raises SSA on the public card and undo restores it', async ({
   await page.getByRole('button', { name: 'Sign in' }).click();
   await page.waitForURL('**/log');
 
-  await page.getByLabel('Activity').selectOption('fasl');
+  await page.getByRole('group', { name: 'Activity' }).getByRole('button', { name: /Fasl/ }).click();
   await page.getByPlaceholder('Search name').fill(kidName);
-  await page.getByLabel(kidName).check();
+  await page.getByRole('button', { name: kidName }).click();
   await page.getByRole('button', { name: /Save 1 kid/ }).click();
   await expect(page.getByRole('status')).toContainText('Saved 1 kid');
 

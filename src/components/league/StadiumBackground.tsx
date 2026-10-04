@@ -4,8 +4,8 @@ const VIGNETTE = 'radial-gradient(ellipse at 50% 20%, transparent 35%, rgba(0, 0
 
 export function StadiumBackground({ children }: { children: React.ReactNode }) {
   return (
-    <div className="relative min-h-dvh overflow-hidden text-chalk" style={{ background: GRASS }}>
-      <div aria-hidden className="pointer-events-none absolute inset-0" style={{ background: VIGNETTE }} />
+    <div className="stadium relative min-h-dvh overflow-hidden text-chalk" style={{ background: GRASS }}>
+      <div aria-hidden className="pointer-events-none absolute inset-0 print:hidden" style={{ background: VIGNETTE }} />
       <div className="relative mx-auto max-w-5xl px-4 pb-16">{children}</div>
     </div>
   );

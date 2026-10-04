@@ -69,25 +69,31 @@ export function PhotoUploader({ initialUrl }: { initialUrl: string | null }) {
   return (
     <div className="flex flex-col gap-2">
       <input type="hidden" name="photo_url" value={url} />
-      {url && <img src={url} alt="Current photo" className="h-32 w-32 rounded-lg bg-white/10 object-cover object-top" />}
-      <input type="file" accept="image/*" onChange={(e) => onFile(e.target.files?.[0])} />
+      {url && <img src={url} alt="Current photo" className="h-32 w-32 rounded-xl bg-chalk/10 object-cover object-top ring-1 ring-chalk/20" />}
+      <input
+        type="file"
+        accept="image/*"
+        aria-label="Photo"
+        onChange={(e) => onFile(e.target.files?.[0])}
+        className="font-card text-base text-chalk/80 file:mr-3 file:rounded-full file:border-0 file:bg-chalk file:px-4 file:py-2 file:font-card file:font-bold file:text-dugout hover:file:brightness-95"
+      />
       {(original || cutout) && (
         <div className="flex gap-3">
           {cutout && (
             <button type="button" onClick={() => upload(cutout)} className="flex flex-col items-center gap-1">
-              <img src={cutoutPreview ?? undefined} alt="Cutout" className="h-32 w-32 rounded-lg bg-white/10 object-contain" />
-              <span className="text-sm underline">Use cutout</span>
+              <img src={cutoutPreview ?? undefined} alt="Cutout" className="h-32 w-32 rounded-xl bg-chalk/10 object-contain ring-1 ring-chalk/20 hover:ring-2 hover:ring-trophy" />
+              <span className="font-card text-base font-bold underline">Use cutout</span>
             </button>
           )}
           {original && (
             <button type="button" onClick={() => upload(original)} className="flex flex-col items-center gap-1">
-              <img src={originalPreview ?? undefined} alt="Original" className="h-32 w-32 rounded-lg object-cover" />
-              <span className="text-sm underline">Use original</span>
+              <img src={originalPreview ?? undefined} alt="Original" className="h-32 w-32 rounded-xl object-cover ring-1 ring-chalk/20 hover:ring-2 hover:ring-trophy" />
+              <span className="font-card text-base font-bold underline">Use original</span>
             </button>
           )}
         </div>
       )}
-      {status && <p className="text-sm text-white/70">{status}</p>}
+      {status && <p className="font-card text-base text-chalk/70">{status}</p>}
     </div>
   );
 }

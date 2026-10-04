@@ -5,18 +5,19 @@ import { Flag } from '@/components/Flag';
 import { CLUB_COUNTRIES, CLUBS, clubById, type Club } from '@/lib/clubs';
 import { FLAGS } from '@/lib/flags';
 import { POSITIONS } from '@/lib/positions';
+import { field } from '@/components/staff/ui';
 
-const field = 'flex-1 rounded-lg bg-white px-3 py-2 text-black';
+const select = `${field} flex-1`;
 
 export function FlagPicker({ initial }: { initial: string }) {
   const [code, setCode] = useState(initial);
   return (
-    <label className="flex flex-col gap-1 text-sm">Country flag
+    <label className="flex flex-col gap-1.5 font-card text-base font-bold text-chalk/90">Country flag
       <span className="flex items-center gap-3">
-        <select name="flag" value={code} onChange={(e) => setCode(e.target.value)} className={field}>
+        <select name="flag" value={code} onChange={(e) => setCode(e.target.value)} className={select}>
           {FLAGS.map((f) => <option key={f.code} value={f.code}>{f.name}</option>)}
         </select>
-        <span className="w-12"><Flag code={code} /></span>
+        <span className="w-12 shrink-0"><Flag code={code} /></span>
       </span>
     </label>
   );
@@ -40,22 +41,22 @@ export function ClubPicker({ initial }: { initial: string }) {
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <label className="flex flex-col gap-1 text-sm">Club country
-        <select value={country} onChange={(e) => changeCountry(e.target.value)} className={field}>
+    <div className="flex flex-col gap-4">
+      <label className="flex flex-col gap-1.5 font-card text-base font-bold text-chalk/90">Club country
+        <select value={country} onChange={(e) => changeCountry(e.target.value)} className={select}>
           {CLUB_COUNTRIES.map((c) => <option key={c} value={c}>{c}</option>)}
         </select>
       </label>
-      <label className="flex flex-col gap-1 text-sm">Club
+      <label className="flex flex-col gap-1.5 font-card text-base font-bold text-chalk/90">Club
         <span className="flex items-center gap-3">
-          <select name="club" value={club} onChange={(e) => setClub(e.target.value)} className={field}>
+          <select name="club" value={club} onChange={(e) => setClub(e.target.value)} className={select}>
             {byLeague(clubs).map(([league, list]) => (
               <optgroup key={league} label={league}>
                 {list.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </optgroup>
             ))}
           </select>
-          <span className="w-12"><ClubCrest club={club} /></span>
+          <span className="w-12 shrink-0"><ClubCrest club={club} /></span>
         </span>
       </label>
     </div>
@@ -64,8 +65,8 @@ export function ClubPicker({ initial }: { initial: string }) {
 
 export function PositionPicker({ initial }: { initial: string | null }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">Playing position (shown on the card)
-      <select name="position" defaultValue={initial ?? ''} className={field}>
+    <label className="flex flex-col gap-1.5 font-card text-base font-bold text-chalk/90">Playing position (shown on the card)
+      <select name="position" defaultValue={initial ?? ''} className={select}>
         <option value="">No position</option>
         {POSITIONS.map((p) => (
           <option key={p.code} value={p.code}>{p.code} ({p.name})</option>

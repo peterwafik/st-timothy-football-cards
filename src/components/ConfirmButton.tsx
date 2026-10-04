@@ -24,14 +24,18 @@ export function ConfirmButton({
   }
 
   if (!armed) {
-    return <button type="button" onClick={() => setArmed(true)} className="text-sm text-red-300 underline">{label}</button>;
+    return (
+      <button type="button" onClick={() => setArmed(true)} className="rounded-full px-3 py-1 font-card text-sm font-bold text-[#ff9a96] ring-1 ring-[#ef6461]/40 hover:bg-[#ef6461]/15">
+        {label}
+      </button>
+    );
   }
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <button type="button" disabled={pending} onClick={confirm} className="rounded bg-red-600 px-2 py-1 text-sm font-bold">
+      <button type="button" disabled={pending} onClick={confirm} className="rounded-full bg-[#ef6461] px-3 py-1 font-card text-sm font-bold text-dugout">
         {pending ? '…' : confirmLabel}
       </button>
-      <button type="button" onClick={() => setArmed(false)} className="text-sm underline">Cancel</button>
+      <button type="button" onClick={() => setArmed(false)} className="font-card text-sm text-chalk/70 underline">Cancel</button>
       {error && <span role="alert" className="text-sm text-red-300">{error}</span>}
     </span>
   );
