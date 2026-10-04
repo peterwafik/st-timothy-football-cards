@@ -1,10 +1,12 @@
 import 'server-only';
 import { redirect } from 'next/navigation';
+import { isSupabaseConfigured } from './supabase/config';
 import { createClient } from './supabase/server';
 
 export interface Teacher { name: string; role: 'teacher' | 'admin' }
 
 export async function requireTeacher() {
+  if (!isSupabaseConfigured()) redirect('/login');
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');

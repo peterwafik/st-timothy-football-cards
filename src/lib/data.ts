@@ -3,6 +3,7 @@ import type { CardData } from './card';
 import { fetchAll } from './fetch-all';
 import { computeClass, type Activity, type KidResult } from './scoring';
 import { createAdminClient } from './supabase/admin';
+import { isSupabaseConfigured } from './supabase/config';
 
 export interface KidRow {
   id: string; name: string; public_code: string; photo_url: string | null; flag: string;
@@ -46,7 +47,7 @@ export function toCardData(kid: KidRow, result: KidResult, tierCount = 11): Card
 }
 
 export async function getCardByCode(code: string): Promise<CardData | null> {
-  if (!/^[a-z0-9]{8}$/.test(code)) return null;
+  if (!/^[a-z0-9]{8}$/.test(code) || !isSupabaseConfigured()) return null;
   const snap = await loadClassSnapshot();
   const kid = snap.kids.find((k) => k.public_code === code);
   if (!kid) return null;
