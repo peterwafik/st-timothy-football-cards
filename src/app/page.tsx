@@ -1,34 +1,38 @@
-import Link from 'next/link';
-import { SquadGrid } from '@/components/SquadGrid';
-import { loadClassSnapshot, type ClassSnapshot } from '@/lib/data';
+import { Leaderboard } from '@/components/league/Leaderboard';
+import { leagueRows, loadClassSnapshot, type ClassSnapshot } from '@/lib/data';
+import { seasonLabel } from '@/lib/standings';
+import { isSupabaseConfigured, NOT_CONFIGURED_MESSAGE } from '@/lib/supabase/config';
 
 export const dynamic = 'force-dynamic';
 
-// Public home page: no account needed. Teachers sign in from the button.
+// Public home page (no account needed): the league table. Teachers sign in from the header.
 export default async function Home() {
   let snap: ClassSnapshot | null = null;
-  try {
-    snap = await loadClassSnapshot();
-  } catch {
-    // Database not reachable or not configured yet: still show the welcome screen.
+  if (isSupabaseConfigured()) {
+    try {
+      snap = await loadClassSnapshot();
+    } catch {
+      // Database unreachable: fall through to the empty table with a message.
+    }
   }
-  const showSquad = snap !== null && snap.settings.leaderboard_public;
 
-  return (
-    <main className="mx-auto flex min-h-dvh max-w-6xl flex-col gap-6 p-4">
-      <header className="flex flex-wrap items-center gap-4">
-        <h1 className="flex-1 font-card text-4xl font-bold uppercase text-gold sm:text-5xl">St. Timothy Squad</h1>
-        <Link href="/login" className="rounded-full bg-gold px-5 py-2 font-card text-lg font-bold uppercase text-pitch">
-          Leaders login
-        </Link>
-      </header>
-      {showSquad ? (
-        <SquadGrid snap={snap!} />
-      ) : (
-        <p className="mt-16 text-center text-lg text-white/70">
-          Welcome to the St. Timothy Sunday School squad! Scan your QR code to see your player card.
-        </p>
-      )}
-    </main>
-  );
+  const now = new Date();
+  const fallbackSeason = seasonLabel(String(now.getMonth() >= 8 ? now.getFullYear() : now.getFullYear() - 1));
+  if (!snap) {
+    const message = isSupabaseConfigured()
+      ? 'The league table could not be loaded. Try again in a minute.'
+      : NOT_CONFIGURED_MESSAGE;
+    return <Leaderboard rows={[]} season={fallbackSeason} showLogin emptyMessage={message} />;
+  }
+  if (!snap.settings.leaderboard_public) {
+    return (
+      <Leaderboard
+        rows={[]}
+        season={seasonLabel(snap.settings.season_start)}
+        showLogin
+        emptyMessage="The league table is private this season. Scan your QR code to see your own card."
+      />
+    );
+  }
+  return <Leaderboard rows={leagueRows(snap)} season={seasonLabel(snap.settings.season_start)} showLogin />;
 }

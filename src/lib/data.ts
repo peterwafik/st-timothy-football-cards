@@ -1,5 +1,6 @@
 import 'server-only';
 import type { CardData } from './card';
+import type { LeagueRow } from './standings';
 import { fetchAll } from './fetch-all';
 import { computeClass, type Activity, type KidResult } from './scoring';
 import { createAdminClient } from './supabase/admin';
@@ -52,4 +53,13 @@ export async function getCardByCode(code: string): Promise<CardData | null> {
   const kid = snap.kids.find((k) => k.public_code === code);
   if (!kid) return null;
   return toCardData(kid, snap.results.get(kid.id)!, snap.settings.tier_count);
+}
+
+export function leagueRows(snap: ClassSnapshot): LeagueRow[] {
+  return snap.kids
+    .filter((k) => k.active)
+    .map((k) => {
+      const result = snap.results.get(k.id)!;
+      return { id: k.id, name: k.name, score: result.score, card: toCardData(k, result, snap.settings.tier_count) };
+    });
 }
